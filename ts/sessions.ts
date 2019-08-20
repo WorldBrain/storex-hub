@@ -19,7 +19,7 @@ export class Session implements api.StorexClientAPI_v0 {
     constructor(private options : SessionOptions) {
     }
 
-    async registerApp(options : { name : string }) : Promise<api.RegisterAppResult_v0> {
+    async registerApp(options : api.RegisterAppOptions_v0) : Promise<api.RegisterAppResult_v0> {
         const storage = await this.options.getStorage()
         const existingApp = await storage.systemModules.apps.getApp(options.name)
         if (existingApp) {
@@ -28,6 +28,9 @@ export class Session implements api.StorexClientAPI_v0 {
 
         const accessToken = await this.options.accessTokenManager.createToken()
         await storage.systemModules.apps.createApp({ identifier: options.name, accessKeyHash: accessToken.hashedToken })
+        if (options.identify) {
+            await this.identifyApp({ name: options.name, accessToken: accessToken.plainTextToken })
+        }
         return { success: true, accessToken: accessToken.plainTextToken }
     }
 
@@ -43,6 +46,13 @@ export class Session implements api.StorexClientAPI_v0 {
             return { success: true }
         } else {
             return { success: false, errorCode: api.IdentifyAppError_v0.INVALID_ACCESS_TOKEN, errorText: 'Invalid access token' }
+        }
+    }
+
+    async getSessionInfo() : Promise<api.GetSessionInfoResult_v0> {
+        return {
+            success: true,
+            appIdentifier: this.identifiedApp && this.identifiedApp.identifier,
         }
     }
 
@@ -72,7 +82,7 @@ export class Session implements api.StorexClientAPI_v0 {
 }
 
 export async function checkAppSchema(schema : AppSchema, options : { identifiedApp : IdentifiedApp }) : Promise<api.UpdateSchemaResult_v0> {
-    for (const [collectionName] of Object.entries(schema.collectionDefinitions)) {
+    for (const [collectionName] of Object.entries(schema.collectionDefinitions || {})) {
         const collectionNameMatch = /^([a-zA-Z]+)(?:\:([a-zA-Z]+))?$/.exec(collectionName)
         if (!collectionNameMatch) {
             return {

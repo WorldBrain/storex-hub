@@ -1,8 +1,9 @@
 import { AppSchema } from './types/apps';
 
 export interface StorexClientAPI_v0 {
-    registerApp(options : { name : string }) : Promise<RegisterAppResult_v0>
+    registerApp(options : RegisterAppOptions_v0) : Promise<RegisterAppResult_v0>
     identifyApp(options : IdentifyAppOptions_v0) : Promise<IdentifyAppResult_v0>
+    getSessionInfo() : Promise<GetSessionInfoResult_v0>
     // unidentifyApp() : Promise<void>
     
     executeOperation(options : { operation: any[] }) : Promise<{ result : any }>
@@ -28,6 +29,11 @@ export interface StorexClientAPI_v0 {
     // getApplicationConfig() : Promise<{}>
 }
 
+export interface RegisterAppOptions_v0 {
+    name : string
+    identify? : boolean
+}
+
 export type RegisterAppResult_v0 = { success : false, errorCode : RegisterAppError_v0, errorText : string } | { success : true, accessToken : string }
 
 export enum RegisterAppError_v0 {
@@ -44,6 +50,11 @@ export type IdentifyAppResult_v0 = { success : true } | { success : false, error
 export enum IdentifyAppError_v0 {
     INVALID_ACCESS_TOKEN = 1,
     DUPLICATE_IDENTFICATION = 2
+}
+
+export type GetSessionInfoResult_v0 = {
+    success : true,
+    appIdentifier? : string
 }
 
 export interface UpdateSchemaOptions_v0 {

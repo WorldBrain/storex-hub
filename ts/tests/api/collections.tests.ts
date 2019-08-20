@@ -8,10 +8,7 @@ export default function testCollectionsAPI () {
 
     it('should be able to register collections and execute data operations', async ({ application }) => {
         const api = await application.api()
-        const registrationResult = await api.registerApp({ name: 'contacts' })
-        await api.identifyApp({ name: 'contacts',
-            accessToken: (registrationResult as { accessToken: string }).accessToken
-        })
+        await api.registerApp({ name: 'contacts', identify: true })
         
         const updateSchemaResult = await api.updateSchema({ schema: { collectionDefinitions: {
             'contacts:user': TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })
@@ -37,10 +34,7 @@ export default function testCollectionsAPI () {
 
     it('should not allow the creation of collections with invalid names', async ({ application }) => {
         const api = await application.api()
-        const registrationResult = await api.registerApp({ name: 'contacts' })
-        await api.identifyApp({ name: 'contacts',
-            accessToken: (registrationResult as { accessToken: string }).accessToken
-        })
+        await api.registerApp({ name: 'contacts', identify: true })
         
         const tryUpdate = async (name : string) => {
             const result = await api.updateSchema({ schema: { collectionDefinitions: {
@@ -59,10 +53,7 @@ export default function testCollectionsAPI () {
 
     it('should not allow the creation of collections without namespaces', async ({ application }) => {
         const api = await application.api()
-        const registrationResult = await api.registerApp({ name: 'contacts' })
-        await api.identifyApp({ name: 'contacts',
-            accessToken: (registrationResult as { accessToken: string }).accessToken
-        })
+        await api.registerApp({ name: 'contacts', identify: true })
         
         const result = await api.updateSchema({ schema: { collectionDefinitions: {
             'user': TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })
@@ -76,10 +67,7 @@ export default function testCollectionsAPI () {
 
     it('should not allow the creation of collections in other namespaces', async ({ application }) => {
         const api = await application.api()
-        const registrationResult = await api.registerApp({ name: 'contacts' })
-        await api.identifyApp({ name: 'contacts',
-            accessToken: (registrationResult as { accessToken: string }).accessToken
-        })
+        await api.registerApp({ name: 'contacts', identify: true })
         
         const result = await api.updateSchema({ schema: { collectionDefinitions: {
             'calendar:user': TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })
