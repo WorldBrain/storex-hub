@@ -1,0 +1,45 @@
+{
+  "private": true,
+  "version": "0.1.0",
+  "description": "A single data store for your local Storex apps",
+  "main": "lib/index.js",
+  "typings": "lib/index",
+  "scripts": {
+    "start": "ts-node ts/main.ts",
+    "prepare": "tsc",
+    "prepare:watch": "npm run prepare -- -w",
+    "test": "mocha --require ts-node/register \"ts/**/*.test.ts\"",
+    "test:watch": "mocha -r source-map-support/register -r ts-node/register \"ts/**/*.test.ts\" --watch --watch-extensions ts",
+    "test:coverage": "rm -rf lib ; yarn prepare && nyc --reporter=html --reporter=text mocha 'lib/**/*.test.js'"
+  },
+  "keywords": [],
+  "author": "Vincent den Boer",
+  "dependencies": {
+    "@worldbrain/storex": "^0.3.7",
+    "@worldbrain/storex-backend-typeorm": "^0.1.0",
+    "@worldbrain/storex-pattern-modules": "^0.3.0",
+    "lodash": "^4.17.10",
+    "source-map-support": "^0.4.18",
+    "sqlite3": "^4.0.6"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.0.6",
+    "@types/events": "^1.2.0",
+    "@types/expect": "^1.20.4",
+    "@types/mocha": "^2.2.44",
+    "@types/node": "^10.12.11",
+    "@worldbrain/storex-backend-dexie": "^0.2.3",
+    "chai": "^4.1.2",
+    "expect": "^23.5.0",
+    "fake-fs": "^0.5.0",
+    "fake-indexeddb": "^2.0.4",
+    "mocha": "^4.0.1",
+    "nyc": "^13.3.0",
+    "sinon": "^4.1.2",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.0.1"
+  },
+  "resolutions": {
+    "**/graphql": "^14.0.0"
+  }
+}
