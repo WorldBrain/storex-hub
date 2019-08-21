@@ -12,7 +12,9 @@ export async function createStorage(options : { createBackend : () => StorageBac
 
     registerModuleMapCollections(storageManager.registry, systemModules as any)
     for (const appSchema of options.appSchemas || []) {
-        storageManager.registry.registerCollections(appSchema.collectionDefinitions)
+        if (appSchema.collectionDefinitions) {
+            storageManager.registry.registerCollections(appSchema.collectionDefinitions)
+        }
     }
 
     await storageManager.finishInitialization()
