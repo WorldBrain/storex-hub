@@ -1,5 +1,6 @@
 {
   "private": true,
+  "name": "@worldbrain/storex-hub",
   "version": "0.1.0",
   "description": "A single data store for your local Storex apps",
   "main": "lib/index.js",
@@ -15,9 +16,14 @@
   "keywords": [],
   "author": "Vincent den Boer",
   "dependencies": {
+    "@types/koa-session": "^5.10.1",
     "@worldbrain/storex": "^0.3.7",
     "@worldbrain/storex-backend-typeorm": "^0.1.0",
     "@worldbrain/storex-pattern-modules": "^0.3.0",
+    "koa": "^2.11.0",
+    "koa-bodyparser": "^4.2.1",
+    "koa-router": "^8.0.6",
+    "koa-session": "^5.12.3",
     "lodash": "^4.17.10",
     "source-map-support": "^0.4.18",
     "sqlite3": "^4.0.6"
@@ -26,8 +32,12 @@
     "@types/chai": "^4.0.6",
     "@types/events": "^1.2.0",
     "@types/expect": "^1.20.4",
+    "@types/koa": "^2.11.0",
+    "@types/koa-bodyparser": "^4.3.0",
+    "@types/koa-router": "^7.4.0",
     "@types/mocha": "^2.2.44",
     "@types/node": "^10.12.11",
+    "@types/supertest": "^2.0.8",
     "@worldbrain/storex-backend-dexie": "^0.2.3",
     "chai": "^4.1.2",
     "expect": "^23.5.0",
@@ -36,6 +46,7 @@
     "mocha": "^4.0.1",
     "nyc": "^13.3.0",
     "sinon": "^4.1.2",
+    "supertest": "^4.0.2",
     "ts-node": "^7.0.1",
     "typescript": "^3.0.1"
   },

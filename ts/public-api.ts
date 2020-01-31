@@ -72,22 +72,28 @@ export enum UpdateSchemaError_v0 {
 export type MethodDescription = SyncMethodDescription
 export interface SyncMethodDescription {
     type: 'sync'
+    path: string
 }
 
-export const METHODS_v0: { [MethodName in keyof StorexClientAPI_v0]: MethodDescription } = {
+export const STOREX_HUB_API_v0: { [MethodName in keyof StorexClientAPI_v0]: MethodDescription } = {
     registerApp: {
         type: 'sync',
+        path: '/app/register',
     },
     identifyApp: {
-        type: 'sync'
+        type: 'sync',
+        path: '/app/identify',
     },
     getSessionInfo: {
         type: 'sync',
+        path: '/session',
     },
     executeOperation: {
-        type: 'sync'
+        type: 'sync',
+        path: '/storage/operation',
     },
     updateSchema: {
-        type: 'sync'
+        type: 'sync',
+        path: '/schema/update',
     },
 }

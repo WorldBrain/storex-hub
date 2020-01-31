@@ -2,13 +2,12 @@ import { createServer } from "./server";
 import { Application } from "./application";
 
 export async function main() {
-    const application = new Application({dbPath: 'sqlite://'})
+    const application = new Application({})
     await application.setup()
-    const server = createServer(application, {
-    })
+    const server = await createServer(application)
     await server.start()
 }
 
-if(require.main === module) {
+if (require.main === module) {
     main()
 }
