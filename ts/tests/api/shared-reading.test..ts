@@ -1,9 +1,7 @@
 import expect from 'expect';
-import { makeAPITestFactory } from "./utils";
+import { createApiTestSuite } from "./utils";
 
-export default async function testSharedReading() {
-    const it = makeAPITestFactory()
-
+export default createApiTestSuite('Read access to virtual tables', ({ it }) => {
     if (1) return
 
     it('should allow different applications to register collections for read acces', async function ({ application }) {
@@ -35,7 +33,7 @@ export default async function testSharedReading() {
                     'superContacts:contact': {
                         term: 'contact',
                         fields: {
-                            displayName: { terms: [ 'contactDisplayName', 'displayName' ] }
+                            displayName: { terms: ['contactDisplayName', 'displayName'] }
                         }
                     }
                 },
@@ -58,7 +56,7 @@ export default async function testSharedReading() {
                 virtualTables: {
                     'contact': {
                         fields: {
-                            displayName: { terms: [ 'contactDisplayName', 'displayName' ] }
+                            displayName: { terms: ['contactDisplayName', 'displayName'] }
                         }
                     }
                 },
@@ -66,12 +64,14 @@ export default async function testSharedReading() {
             }
         })
 
-        const { result: createResult } = await contactsApi.executeOperation({ operation: ['createObject', 'superContacts:contact', {
-            displayName: 'John Doe'
-        }] })
+        const { result: createResult } = await contactsApi.executeOperation({
+            operation: ['createObject', 'superContacts:contact', {
+                displayName: 'John Doe'
+            }]
+        })
         const { result: findResult } = await crmApi.executeOperation({ operation: ['findObjects', 'virtual:contact'] })
         expect(findResult).toEqual([
             { displayName: 'John' }
         ])
     })
-}
+})
