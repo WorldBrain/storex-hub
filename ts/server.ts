@@ -3,7 +3,7 @@ import Router from 'koa-router'
 import session from 'koa-session'
 import bodyParser from 'koa-bodyparser'
 import { Application } from "./application";
-import { STOREX_HUB_API_v0, StorexClientAPI_v0 } from './public-api';
+import { STOREX_HUB_API_v0, StorexHubApi_v0 } from './public-api';
 
 export async function createServer(application: Application, options: {
     secretKey: string
@@ -17,7 +17,7 @@ export async function createServer(application: Application, options: {
     }, app))
 
     // TODO: This will leak a lot, since sessions never get cleaned up
-    const sessions: { [appName: string]: StorexClientAPI_v0 } = {}
+    const sessions: { [appName: string]: StorexHubApi_v0 } = {}
 
     for (const [methodName, methodDescription] of Object.entries(STOREX_HUB_API_v0)) {
         router.post(methodDescription.path, async ctx => {

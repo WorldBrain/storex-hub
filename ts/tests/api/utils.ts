@@ -6,11 +6,11 @@ import { Application } from "../../application";
 import { DevelopmentAccessTokenManager } from "../../access-tokens";
 import { sequentialTokenGenerator } from "../../access-tokens.tests";
 import { createServer } from '../../server';
-import { StorexClientAPI_v0 } from '../../public-api';
+import { StorexHubApi_v0 } from '../../public-api';
 import { createStorexHubHttpClient } from '../../client';
 
 export interface TestSetup {
-    application: { api: () => Promise<StorexClientAPI_v0> }
+    application: { api: () => Promise<StorexHubApi_v0> }
 }
 export type TestFactory = (description: string, test?: (setup: TestSetup) => void | Promise<void>) => void
 

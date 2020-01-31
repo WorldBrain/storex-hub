@@ -1,6 +1,6 @@
 import { AppSchema } from './types/apps';
 
-export interface StorexClientAPI_v0 {
+export interface StorexHubApi_v0 {
     registerApp(options: RegisterAppOptions_v0): Promise<RegisterAppResult_v0>
     identifyApp(options: IdentifyAppOptions_v0): Promise<IdentifyAppResult_v0>
     getSessionInfo(): Promise<GetSessionInfoResult_v0>
@@ -75,7 +75,7 @@ export interface SyncMethodDescription {
     path: string
 }
 
-export const STOREX_HUB_API_v0: { [MethodName in keyof StorexClientAPI_v0]: MethodDescription } = {
+export const STOREX_HUB_API_v0: { [MethodName in keyof StorexHubApi_v0]: MethodDescription } = {
     registerApp: {
         type: 'sync',
         path: '/app/register',

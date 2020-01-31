@@ -1,27 +1,27 @@
 import { StorageBackend } from "@worldbrain/storex";
-import { StorexClientAPI_v0 } from "./public-api";
+import { StorexHubApi_v0 } from "./public-api";
 import { Session } from "./sessions";
 import { AccessTokenManager } from "./access-tokens";
 import { Storage } from "./storage/types";
 import { createStorage } from "./storage";
 
 export interface ApplicationOptions {
-    accessTokenManager : AccessTokenManager
-    createStorageBackend : () => StorageBackend
-    closeStorageBackend : (storageBackend : StorageBackend) => Promise<void>
+    accessTokenManager: AccessTokenManager
+    createStorageBackend: () => StorageBackend
+    closeStorageBackend: (storageBackend: StorageBackend) => Promise<void>
 }
 export class Application {
-    private storage : Promise<Storage>
+    private storage: Promise<Storage>
 
-    constructor(private options : ApplicationOptions) {
+    constructor(private options: ApplicationOptions) {
         this.storage = createStorage({ createBackend: options.createStorageBackend })
     }
 
     async setup() {
-        
+
     }
 
-    async api() : Promise<StorexClientAPI_v0> {
+    async api(): Promise<StorexHubApi_v0> {
         return new Session({
             accessTokenManager: this.options.accessTokenManager,
             getStorage: () => this.storage,

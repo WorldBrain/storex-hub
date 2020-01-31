@@ -5,21 +5,21 @@ import { Storage } from "./storage/types";
 import { AppSchema } from "./types/apps";
 
 export interface SessionOptions {
-    accessTokenManager : AccessTokenManager
-    getStorage : () => Promise<Storage>
-    updateStorage : () => Promise<void>
+    accessTokenManager: AccessTokenManager
+    getStorage: () => Promise<Storage>
+    updateStorage: () => Promise<void>
 }
 interface IdentifiedApp {
-    id : number | string
-    identifier : string
+    id: number | string
+    identifier: string
 }
-export class Session implements api.StorexClientAPI_v0 {
-    private identifiedApp? : IdentifiedApp
+export class Session implements api.StorexHubApi_v0 {
+    private identifiedApp?: IdentifiedApp
 
-    constructor(private options : SessionOptions) {
+    constructor(private options: SessionOptions) {
     }
 
-    async registerApp(options : api.RegisterAppOptions_v0) : Promise<api.RegisterAppResult_v0> {
+    async registerApp(options: api.RegisterAppOptions_v0): Promise<api.RegisterAppResult_v0> {
         const storage = await this.options.getStorage()
         const existingApp = await storage.systemModules.apps.getApp(options.name)
         if (existingApp) {
@@ -34,7 +34,7 @@ export class Session implements api.StorexClientAPI_v0 {
         return { success: true, accessToken: accessToken.plainTextToken }
     }
 
-    async identifyApp(options : api.IdentifyAppOptions_v0 ) : Promise<api.IdentifyAppResult_v0> {
+    async identifyApp(options: api.IdentifyAppOptions_v0): Promise<api.IdentifyAppResult_v0> {
         const storage = await this.options.getStorage()
         const existingApp = await storage.systemModules.apps.getApp(options.name)
         if (!existingApp) {
@@ -49,25 +49,25 @@ export class Session implements api.StorexClientAPI_v0 {
         }
     }
 
-    async getSessionInfo() : Promise<api.GetSessionInfoResult_v0> {
+    async getSessionInfo(): Promise<api.GetSessionInfoResult_v0> {
         return {
             success: true,
             appIdentifier: this.identifiedApp && this.identifiedApp.identifier,
         }
     }
 
-    async executeOperation(options : { operation: any[] }) : Promise<{ result : any }> {
+    async executeOperation(options: { operation: any[] }): Promise<{ result: any }> {
         return { result: await (await this.options.getStorage()).manager.operation(options.operation[0], ...options.operation.slice(1)) }
     }
 
-    async updateSchema(options : { schema : AppSchema }) : Promise<api.UpdateSchemaResult_v0> {
+    async updateSchema(options: { schema: AppSchema }): Promise<api.UpdateSchemaResult_v0> {
         if (!this.identifiedApp) {
             return {
                 success: false, errorCode: api.UpdateSchemaError_v0.NOT_ALLOWED,
                 errorText: `Could not update schema: app not identified`
             }
         }
-        
+
         const checkResult = await checkAppSchema(options.schema, { identifiedApp: this.identifiedApp })
         if (!checkResult.success) {
             return checkResult
@@ -81,7 +81,7 @@ export class Session implements api.StorexClientAPI_v0 {
     }
 }
 
-export async function checkAppSchema(schema : AppSchema, options : { identifiedApp : IdentifiedApp }) : Promise<api.UpdateSchemaResult_v0> {
+export async function checkAppSchema(schema: AppSchema, options: { identifiedApp: IdentifiedApp }): Promise<api.UpdateSchemaResult_v0> {
     for (const [collectionName] of Object.entries(schema.collectionDefinitions || {})) {
         const collectionNameMatch = /^([a-zA-Z]+)(?:\:([a-zA-Z]+))?$/.exec(collectionName)
         if (!collectionNameMatch) {
