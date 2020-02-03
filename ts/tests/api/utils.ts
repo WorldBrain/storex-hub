@@ -2,12 +2,13 @@ import supertest from 'supertest'
 import { DexieStorageBackend } from '@worldbrain/storex-backend-dexie'
 import inMemory from '@worldbrain/storex-backend-dexie/lib/in-memory'
 import { StorageBackend } from '@worldbrain/storex';
+import io from 'socket.io-client'
 import { Application } from "../../application";
 import { DevelopmentAccessTokenManager } from "../../access-tokens";
 import { sequentialTokenGenerator } from "../../access-tokens.tests";
-import { createServer } from '../../server';
+import { createHttpServer } from '../../server';
 import { StorexHubApi_v0 } from '../../public-api';
-import { createStorexHubHttpClient } from '../../client';
+import { createStorexHubClient } from '../../client';
 
 export interface TestSetup {
     application: { api: () => Promise<StorexHubApi_v0> }
@@ -30,7 +31,7 @@ function createTestApplication() {
 }
 
 function createApiTestFactory(): TestFactory {
-    function factory(description: string, test?: (setup: TestSetup) => void | Promise<void>) {
+    const factory: TestFactory = (description, test?) => {
         it(description, test && (async () => {
             await test({ application: createTestApplication() })
         }))
@@ -39,17 +40,17 @@ function createApiTestFactory(): TestFactory {
 }
 
 function createHttpTestFactory(): TestFactory {
-    function factory(description: string, test?: (setup: TestSetup) => void | Promise<void>) {
+    const factory: TestFactory = (description, test?) => {
         it(description, test && (async () => {
             const application = createTestApplication()
-            const server = await createServer(application, {
+            const server = await createHttpServer(application, {
                 secretKey: 'bla'
             })
             await test({
                 application: {
                     api: async () => {
                         const agent = supertest.agent(server.app.callback())
-                        return createStorexHubHttpClient(
+                        return createStorexHubClient(
                             async (url, options) => {
                                 const response = await agent.post(url)
                                     .send(options.methodOptions)
@@ -69,6 +70,69 @@ function createHttpTestFactory(): TestFactory {
     return factory
 }
 
+function createWebsocketTestFactory() {
+    const factory: TestFactory = (description, test?) => {
+        it(description, test && (async () => {
+            const application = createTestApplication()
+            const server = await createHttpServer(application, {
+                secretKey: 'bla'
+            })
+
+            await server.start()
+            const sockets: SocketIOClient.Socket[] = []
+            try {
+                await test({
+                    application: {
+                        api: async () => {
+                            const socket = io('http://localhost:3000', { forceNew: true })
+                            sockets.push(socket)
+
+                            const waitForConnection = new Promise((resolve, reject) => {
+                                socket.once('connect', () => {
+                                    resolve()
+                                })
+                            })
+                            const waitForError = new Promise<never>((resolve, reject) => {
+                                socket.once('error', (error: Error) => {
+                                    reject(error)
+                                })
+                            })
+
+                            await Promise.race([waitForConnection, waitForError])
+
+                            return createStorexHubClient(
+                                async (methodName, options) => {
+                                    const waitForResponse = new Promise<{ result: any }>((resolve, reject) => {
+                                        socket.once('response', (response: any) => {
+                                            resolve(response)
+                                        })
+                                    })
+                                    socket.emit('request', {
+                                        methodName,
+                                        methodOptions: options.methodOptions,
+                                    })
+                                    const response = await Promise.race([waitForResponse, waitForError])
+
+                                    return {
+                                        result: response.result,
+                                    }
+                                },
+                                { identifier: 'methodName' }
+                            )
+                        }
+                    }
+                })
+            } finally {
+                await server.stop()
+                for (const socket of sockets) {
+                    socket.disconnect()
+                }
+            }
+        }))
+    }
+    return factory
+}
+
 export function createApiTestSuite(description: string, suite: (options: { it: TestFactory }) => void) {
     describe(description, () => {
         describe('Direct invocation', () => {
@@ -77,6 +141,10 @@ export function createApiTestSuite(description: string, suite: (options: { it: T
 
         describe('HTTP API', () => {
             suite({ it: createHttpTestFactory() })
+        })
+
+        describe('WebSocket API', () => {
+            suite({ it: createWebsocketTestFactory() })
         })
     })
 }

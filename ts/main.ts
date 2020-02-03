@@ -1,10 +1,10 @@
-import { createServer } from "./server";
+import { createHttpServer } from "./server";
 import { Application } from "./application";
 
 export async function main() {
     const application = new Application({})
     await application.setup()
-    const server = await createServer(application)
+    const server = await createHttpServer(application)
     await server.start()
 }
 

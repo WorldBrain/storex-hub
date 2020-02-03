@@ -1,22 +1,21 @@
 {
-    "version": "3.4",
-    "compilerOptions": {
-        "target": "es5",
-        "module": "commonjs",
-        "moduleResolution": "node",
-        "strict": true,
-        "esModuleInterop": true,
-        "allowSyntheticDefaultImports": true,
-        "removeComments": true,
-        "lib": ["es2017", "dom"],
-        "noLib": false,
-        "downlevelIteration": true,
-        "preserveConstEnums": true,
-        "declaration": true,
-        "sourceMap": true,
-        "suppressImplicitAnyIndexErrors": true,
-        "typeRoots": ["./node_modules/@types"],
-        "outDir": "lib"
-    },
-    "filesGlob": ["./ts/**/*.ts", "!./node_modules/**/*.ts"]
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "removeComments": true,
+    "lib": ["es2017", "dom"],
+    "noLib": false,
+    "downlevelIteration": true,
+    "preserveConstEnums": true,
+    "declaration": true,
+    "sourceMap": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "typeRoots": ["./node_modules/@types"],
+    "outDir": "lib"
+  },
+  "filesGlob": ["./ts/**/*.ts", "!./node_modules/**/*.ts"]
 }
