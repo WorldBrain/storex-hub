@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { createApiTestSuite } from "./utils";
+import { createApiTestSuite } from "./index.tests";
 import { UpdateSchemaError_v0 } from '../../public-api';
 import { TEST_COLLECTION_DEFINITIONS } from './data';
 

@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { createApiTestSuite } from "./utils";
+import { createApiTestSuite } from "./index.tests";
 import * as apiTypes from '../../public-api';
 
 const IDENTIFIED_SESSION_INFO: apiTypes.GetSessionInfoResult_v0 = {

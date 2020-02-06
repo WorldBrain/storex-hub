@@ -5,7 +5,7 @@ import { AppSchema } from '../../types/apps';
 import { extendedJSONReviver } from '../../utils/json';
 
 export class AppStorage extends StorageModule {
-    getConfig() : StorageModuleConfig {
+    getConfig(): StorageModuleConfig {
         return {
             collections: {
                 app: {
@@ -13,6 +13,7 @@ export class AppStorage extends StorageModule {
                     fields: {
                         identifier: { type: 'string' },
                         accessKeyHash: { type: 'string' },
+                        isRemote: { type: 'boolean', optional: true }
                     }
                 },
                 appSchema: {
@@ -61,15 +62,15 @@ export class AppStorage extends StorageModule {
         }
     }
 
-    async createApp(options : { identifier : string, accessKeyHash : string }) {
-        await this.operation('createApp', options)
+    async createApp(app: { identifier: string, accessKeyHash: string, isRemote?: boolean }) {
+        await this.operation('createApp', app)
     }
 
-    async getApp(identifier : string) {
+    async getApp(identifier: string) {
         return this.operation('findAppByIdentifier', { identifier })
     }
 
-    async updateSchema(app : string | number, schema : AppSchema) {
+    async updateSchema(app: string | number, schema: AppSchema) {
         const existingSchema = await this.operation('getSchema', { app })
         const serialized = JSON.stringify(schema, null, 4)
         if (existingSchema) {
@@ -79,10 +80,10 @@ export class AppStorage extends StorageModule {
         }
     }
 
-    async getAppSchemas() : Promise<Array<{ schema : AppSchema }>> {
+    async getAppSchemas(): Promise<Array<{ schema: AppSchema }>> {
         const jsonReviver = extendedJSONReviver({ withDates: true })
 
-        return (await this.operation('getAllSchemas', {})).map((schemaObject : { schema : string }) => ({
+        return (await this.operation('getAllSchemas', {})).map((schemaObject: { schema: string }) => ({
             schema: JSON.parse(schemaObject.schema, jsonReviver)
         }))
     }

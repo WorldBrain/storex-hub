@@ -1,5 +1,5 @@
 import expect from 'expect';
-import { createApiTestSuite } from "./utils";
+import { createApiTestSuite } from "./index.tests";
 
 export default createApiTestSuite('Read access to virtual tables', ({ it }) => {
     if (1) return

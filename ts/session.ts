@@ -1,19 +1,39 @@
 import * as api from "./public-api";
 import { CollectionDefinitionMap } from "@worldbrain/storex";
+import TypedEmitter from 'typed-emitter'
 import { AccessTokenManager } from "./access-tokens";
 import { Storage } from "./storage/types";
 import { AppSchema } from "./types/apps";
+import { EventEmitter } from "events";
+import { StorexHubCallbacks_v0, ExecuteRemoteOperationOptions_v0 } from "./public-api";
+import { SingleArgumentOf } from "./types/utils";
 
 export interface SessionOptions {
     accessTokenManager: AccessTokenManager
     getStorage: () => Promise<Storage>
     updateStorage: () => Promise<void>
+    executeCallback: (
+        (appIdentifier: string, methodName: string, methodOptions: any)
+            => Promise<any>
+    )
+
+    // executeCallback: (
+    //     <MethodName extends keyof StorexHubCallbacks_v0>
+    //         (appIdentifier: string, methodName: MethodName, methodOptions: SingleArgumentOf<StorexHubCallbacks_v0[MethodName]>)
+    //         => ReturnType<StorexHubCallbacks_v0[MethodName]>
+    // )
 }
+export interface SessionEvents {
+    appIdentified: (event: { identifier: string, remote: boolean }) => void
+}
+
 interface IdentifiedApp {
     id: number | string
     identifier: string
 }
 export class Session implements api.StorexHubApi_v0 {
+    events: TypedEmitter<SessionEvents> = new EventEmitter() as TypedEmitter<SessionEvents>
+
     private identifiedApp?: IdentifiedApp
 
     constructor(private options: SessionOptions) {
@@ -27,7 +47,11 @@ export class Session implements api.StorexHubApi_v0 {
         }
 
         const accessToken = await this.options.accessTokenManager.createToken()
-        await storage.systemModules.apps.createApp({ identifier: options.name, accessKeyHash: accessToken.hashedToken })
+        await storage.systemModules.apps.createApp({
+            identifier: options.name,
+            accessKeyHash: accessToken.hashedToken,
+            isRemote: options.remote,
+        })
         if (options.identify) {
             await this.identifyApp({ name: options.name, accessToken: accessToken.plainTextToken })
         }
@@ -43,6 +67,7 @@ export class Session implements api.StorexHubApi_v0 {
         const valid = await this.options.accessTokenManager.validateToken({ actualHash: existingApp.accessKeyHash, providedToken: options.accessToken })
         if (valid) {
             this.identifiedApp = { identifier: options.name, id: existingApp.id }
+            this.events.emit('appIdentified', { identifier: options.name, remote: !!existingApp.isRemote })
             return { success: true }
         } else {
             return { success: false, errorCode: api.IdentifyAppError_v0.INVALID_ACCESS_TOKEN, errorText: 'Invalid access token' }
@@ -78,6 +103,12 @@ export class Session implements api.StorexHubApi_v0 {
         )
         await this.options.updateStorage()
         return { success: true }
+    }
+
+    async executeRemoteOperation(options: ExecuteRemoteOperationOptions_v0): Promise<{ result: any }> {
+        return this.options.executeCallback(options.app, 'handleRemoteOperation', {
+            operation: options.operation,
+        })
     }
 }
 

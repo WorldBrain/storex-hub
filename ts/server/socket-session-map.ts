@@ -1,7 +1,7 @@
 export class SocketSessionMap<Session> {
     public sessions: { [id: string]: Promise<Session> } = {}
 
-    constructor(private options: { createSession: () => Promise<Session> }) {
+    constructor(private options: { createSession: (client: SocketIO.Socket) => Promise<Session> }) {
     }
 
     setup(io: SocketIO.Server) {
@@ -9,7 +9,7 @@ export class SocketSessionMap<Session> {
             const id = client.id
 
             if (!this.sessions[id]) {
-                this.sessions[id] = this.options.createSession()
+                this.sessions[id] = this.options.createSession(client)
 
                 client.once('disconnect', () => {
                     if (this.sessions[id]) {

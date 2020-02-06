@@ -4,7 +4,7 @@ import session from 'koa-session'
 import bodyParser from 'koa-bodyparser'
 const IO = require('koa-socket-2')
 import { Application } from "../application";
-import { STOREX_HUB_API_v0, StorexHubApi_v0 } from '../public-api';
+import { STOREX_HUB_API_v0, StorexHubApi_v0, StorexHubCallbacks_v0 } from '../public-api';
 import { Server } from 'http'
 import { SocketSessionMap } from './socket-session-map'
 
@@ -63,7 +63,34 @@ export async function createHttpServer(application: Application, options: {
 }
 
 function setupWebsocketServer(io: SocketIO.Server, application: Application) {
-    const sessions = new SocketSessionMap({ createSession: () => application.api() })
+    let requestsSent = 0
+    const sessions = new SocketSessionMap({
+        createSession: (socket) => application.api({
+            callbacks: new Proxy({}, {
+                get: <MethodName extends keyof StorexHubCallbacks_v0>(_: unknown, key: MethodName) => {
+                    return (options: StorexHubCallbacks_v0[MethodName]) => {
+                        return new Promise((resolve, reject) => {
+                            const requestId = ++requestsSent
+                            const handler = (message: any) => {
+                                if (message.requestId !== requestId) {
+                                    return
+                                }
+                                socket.removeListener('request', handler)
+
+                                resolve(message.response)
+                            }
+                            socket.on('response', handler)
+                            socket.emit('request', {
+                                requestId,
+                                methodName: key,
+                                methodOptions: options,
+                            })
+                        })
+                    }
+                }
+            }) as StorexHubCallbacks_v0
+        })
+    })
     sessions.setup(io)
 
     io.on('request', async (message: { socket: SocketIO.Socket, event: string, data: { methodName: string, methodOptions: any } }) => {

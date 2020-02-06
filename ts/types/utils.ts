@@ -1,0 +1,1 @@
+export type SingleArgumentOf<T> = T extends (arg: infer U) => any ? U : never

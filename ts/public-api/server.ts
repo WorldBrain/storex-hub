@@ -1,4 +1,4 @@
-import { AppSchema } from './types/apps';
+import { AppSchema } from '../types/apps';
 
 export interface StorexHubApi_v0 {
     registerApp(options: RegisterAppOptions_v0): Promise<RegisterAppResult_v0>
@@ -7,6 +7,8 @@ export interface StorexHubApi_v0 {
     // unidentifyApp() : Promise<void>
 
     executeOperation(options: { operation: any[] }): Promise<{ result: any }>
+
+    executeRemoteOperation(options: ExecuteRemoteOperationOptions_v0): Promise<{ result: any }>
 
     // requestPriviliges(options : {  }) : Promise<{}>
     // listPrivileges() : Promise<{}>
@@ -31,6 +33,7 @@ export interface StorexHubApi_v0 {
 
 export interface RegisterAppOptions_v0 {
     name: string
+    remote?: boolean
     identify?: boolean
 }
 
@@ -57,6 +60,11 @@ export type GetSessionInfoResult_v0 = {
     appIdentifier?: string
 }
 
+export interface ExecuteRemoteOperationOptions_v0 {
+    app: string
+    operation: any[]
+}
+
 export interface UpdateSchemaOptions_v0 {
     schema: AppSchema
 }
@@ -71,29 +79,26 @@ export enum UpdateSchemaError_v0 {
 
 export type MethodDescription = SyncMethodDescription
 export interface SyncMethodDescription {
-    type: 'sync'
     path: string
 }
 
 export const STOREX_HUB_API_v0: { [MethodName in keyof StorexHubApi_v0]: MethodDescription } = {
     registerApp: {
-        type: 'sync',
         path: '/app/register',
     },
     identifyApp: {
-        type: 'sync',
         path: '/app/identify',
     },
     getSessionInfo: {
-        type: 'sync',
         path: '/session',
     },
     executeOperation: {
-        type: 'sync',
         path: '/storage/operation',
     },
     updateSchema: {
-        type: 'sync',
         path: '/schema/update',
     },
+    executeRemoteOperation: {
+        path: '/remote/operation'
+    }
 }
