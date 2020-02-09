@@ -1,4 +1,4 @@
-import { StorexHubApi_v0, STOREX_HUB_API_v0, StorexHubCallbacks_v0 } from "./public-api";
+import { StorexHubApi_v0, STOREX_HUB_API_v0, StorexHubCallbacks_v0, MethodDescription } from "./public-api";
 
 export type StorexHubClientRequester<Result = any> = (url: string, options: {
     methodOptions: any
@@ -10,13 +10,13 @@ export async function createStorexHubClient(request: StorexHubClientRequester, o
     const usePath = options?.identifier !== 'methodName'
 
     const api: StorexHubApi_v0 = {} as any
-    for (const [methodName, methodDescription] of Object.entries(STOREX_HUB_API_v0)) {
-        api[methodName] = async (methodOptions: any) => {
-            const response = await request(usePath ? methodDescription.path : methodName, {
+    for (const method of Object.entries(STOREX_HUB_API_v0)) {
+        api[method[0]] = ((method: [string, MethodDescription]) => async (methodOptions: any) => {
+            const response = await request(usePath ? method[1].path : method[0], {
                 methodOptions
             })
             return response.result
-        }
+        })(method)
     }
     return api
 }
