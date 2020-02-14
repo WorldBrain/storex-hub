@@ -8,8 +8,8 @@ export interface ChangeWatchMiddlewareSettings {
     shouldWatchCollection(collection: string): boolean
     operationWatchers?: { [name: string]: StorageOperationWatcher }
     getCollectionDefinition?(collection: string): CollectionDefinition
-    preprocessOperation?(operation: any[], info: StorageOperationChangeInfo<false>): void | Promise<void>
-    postprocessOperation?(operation: any[], info: StorageOperationChangeInfo<true>): void | Promise<void>
+    preprocessOperation?(operation: any[], info: StorageOperationChangeInfo<'pre'>): void | Promise<void>
+    postprocessOperation?(operation: any[], info: StorageOperationChangeInfo<'post'>): void | Promise<void>
 }
 export class ChangeWatchMiddleware implements StorageMiddleware {
     enabled = true
@@ -38,12 +38,19 @@ export class ChangeWatchMiddleware implements StorageMiddleware {
 
         const originalOperation = cloneDeep(context.operation)
         if (this.options.preprocessOperation) {
-            const info = watcher.getInfoBeforeExecution(context)
+            const info = await watcher.getInfoBeforeExecution({
+                operation: originalOperation,
+                storageManager: this.options.storageManager
+            })
             await this.options.preprocessOperation(originalOperation, info)
         }
         const result = await executeNext()
         if (this.options.postprocessOperation) {
-            const info = watcher.getInfoAfterExecution({ operation: originalOperation, result })
+            const info = await watcher.getInfoAfterExecution({
+                operation: originalOperation,
+                result,
+                storageManager: this.options.storageManager
+            })
             await this.options.postprocessOperation(originalOperation, info)
         }
         return result

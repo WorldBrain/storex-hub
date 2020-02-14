@@ -1,4 +1,6 @@
-export type StorageChange<WithPk extends boolean> = CreationStorageChange<WithPk> | ModificationStorageChange | DeletionStorageChange
+import StorageManager from "@worldbrain/storex"
+
+export type StorageChange<Phase extends 'pre' | 'post'> = CreationStorageChange<Phase> | ModificationStorageChange<Phase> | DeletionStorageChange<Phase>
 
 export type StorageChangePk = string | number | { [key: string]: any }
 
@@ -6,27 +8,31 @@ export interface StorageChangeBase {
     collection: string
 }
 
-export type CreationStorageChange<WithPk extends boolean> = StorageChangeBase & {
+export type CreationStorageChange<Phase extends 'pre' | 'post'> = StorageChangeBase & {
     type: 'create'
     values: { [key: string]: any }
-} & (WithPk extends true ? { pk: StorageChangePk } : {})
+} & (Phase extends 'post' ? { pk: StorageChangePk } : {})
 
-export interface ModificationStorageChange extends StorageChangeBase {
+export type ModificationStorageChange<Phase extends 'pre' | 'post'> = StorageChangeBase & {
     type: 'modify'
+    where: { [key: string]: any }
     updates: { [key: string]: any }
-    pks: StorageChangePk[]
-}
+} & (Phase extends 'pre' ? { pks: StorageChangePk[] } : {})
 
-export interface DeletionStorageChange {
+export type DeletionStorageChange<Phase extends 'pre' | 'post'> = StorageChangeBase & {
     type: 'delete'
-    pks: StorageChangePk[]
-}
+    where: { [key: string]: any }
+} & (Phase extends 'pre' ? { pks: StorageChangePk[] } : {})
 
-export interface StorageOperationChangeInfo<WithPk extends boolean> {
-    changes: StorageChange<WithPk>[]
+export interface StorageOperationChangeInfo<Phase extends 'pre' | 'post'> {
+    changes: StorageChange<Phase>[]
 }
 
 export interface StorageOperationWatcher {
-    getInfoBeforeExecution(context: { operation: any[] }): StorageOperationChangeInfo<false>
-    getInfoAfterExecution(context: { operation: any[], result: any }): StorageOperationChangeInfo<true>
+    getInfoBeforeExecution(context: {
+        operation: any[], storageManager: StorageManager
+    }): StorageOperationChangeInfo<'pre'> | Promise<StorageOperationChangeInfo<'pre'>>
+    getInfoAfterExecution(context: {
+        operation: any[], result: any, storageManager: StorageManager
+    }): StorageOperationChangeInfo<'post'> | Promise<StorageOperationChangeInfo<'post'>>
 }

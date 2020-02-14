@@ -6,8 +6,8 @@ import { StorageChange, StorageOperationChangeInfo } from "./types"
 import expect = require("expect")
 
 interface ProcessedTestOperations {
-    preproccessed: Array<{ operation: any[], info: StorageOperationChangeInfo<false> }>
-    postproccessed: Array<{ operation: any[], info: StorageOperationChangeInfo<true> }>
+    preproccessed: Array<{ operation: any[], info: StorageOperationChangeInfo<'pre'> }>
+    postproccessed: Array<{ operation: any[], info: StorageOperationChangeInfo<'post'> }>
 }
 interface TestSetup {
     storageManager: StorageManager
@@ -38,10 +38,7 @@ async function setupTest(options?: {
     })
     await storageManager.finishInitialization()
 
-    const operations: {
-        preproccessed: Array<{ operation: any[], info: StorageOperationChangeInfo<false> }>,
-        postproccessed: Array<{ operation: any[], info: StorageOperationChangeInfo<true> }>,
-    } = { preproccessed: [], postproccessed: [] }
+    const operations: ProcessedTestOperations = { preproccessed: [], postproccessed: [] }
     const changeWatchMiddleware = new ChangeWatchMiddleware({
         storageManager,
         shouldWatchCollection: options?.shouldWatchCollection ?? (() => true),
@@ -66,11 +63,11 @@ async function setupTest(options?: {
     }
 }
 
-async function executeTestCreate(storageManager: StorageManager) {
+async function executeTestCreate(storageManager: StorageManager, options?: { id?: number | string }) {
     const objectValues = { displayName: 'John Doe' }
     const { object } = await storageManager
         .collection('user')
-        .createObject({ ...objectValues })
+        .createObject({ ...objectValues, id: options?.id })
 
     return { object, objectValues }
 }
@@ -82,11 +79,25 @@ async function verifiyTestCreate(storageManager: StorageManager, options: { obje
     ])
 }
 
-async function testCreateWithoutLogging(setup: TestSetup) {
+async function testCreateWithoutLogging(setup: Pick<TestSetup, 'storageManager' | 'popProcessedOperations'>) {
     const creation = await executeTestCreate(setup.storageManager)
     expect(setup.popProcessedOperations('preproccessed')).toEqual([])
     expect(setup.popProcessedOperations('postproccessed')).toEqual([])
     await verifiyTestCreate(setup.storageManager, creation)
+}
+
+async function insertTestObjects(setup: Pick<TestSetup, 'storageManager' | 'popProcessedOperations'>) {
+    const { object: object1 } = await setup.storageManager
+        .collection('user')
+        .createObject({ displayName: 'Joe' })
+    const { object: object2 } = await setup.storageManager
+        .collection('user')
+        .createObject({ displayName: 'Bob' })
+
+    setup.popProcessedOperations('preproccessed')
+    setup.popProcessedOperations('postproccessed')
+
+    return { object1, object2 }
 }
 
 describe('ChangeWatchMiddleware', () => {
@@ -118,25 +129,277 @@ describe('ChangeWatchMiddleware', () => {
         await verifiyTestCreate(storageManager, creation)
     })
 
-    it('should correctly report creations with manual IDs'/* , async () => {
-        const { storageManager } = await setupTest()
-        const { object } = await storageManager
-            .collection('user')
-            .createObject({ id: 53, displayName: 'John Doe' })
+    it('should correctly report creations with manual IDs', async () => {
+        const { storageManager, popProcessedOperations } = await setupTest()
+        const creation = await executeTestCreate(storageManager, { id: 5 })
 
-    } */)
+        expect(popProcessedOperations('preproccessed')).toEqual([
+            {
+                operation: ['createObject', 'user', { ...creation.objectValues, id: 5 }],
+                info: {
+                    changes: [
+                        { type: 'create', collection: 'user', values: { ...creation.objectValues, id: 5 } }
+                    ]
+                }
+            }
+        ])
+        expect(popProcessedOperations('postproccessed')).toEqual([
+            {
+                operation: ['createObject', 'user', { ...creation.objectValues, id: 5 }],
+                info: {
+                    changes: [
+                        { type: 'create', collection: 'user', pk: creation.object.id, values: { ...creation.objectValues, id: 5 } }
+                    ]
+                }
+            }
+        ])
 
-    it('should correctly report modifications by updateObject')
+        await verifiyTestCreate(storageManager, creation)
+    })
 
-    it('should correctly report modifications by updateObjects filtered by PK')
+    it('should correctly report modifications by updateObject filtered by PK', async () => {
+        const { storageManager, popProcessedOperations } = await setupTest()
+        const { object1, object2 } = await insertTestObjects({ storageManager, popProcessedOperations })
 
-    it('should correctly report modifications by updateObjects filtered by other fields')
+        await storageManager.operation('updateObject', 'user', { id: object1.id }, { displayName: 'Jon' })
 
-    it('should correctly report deletions by updateObject')
+        expect(popProcessedOperations('preproccessed')).toEqual([
+            {
+                operation: ['updateObject', 'user', { id: object1.id }, { displayName: 'Jon' }],
+                info: {
+                    changes: [
+                        {
+                            type: 'modify', collection: 'user',
+                            where: { id: object1.id },
+                            updates: { displayName: 'Jon' },
+                            pks: [object1.id]
+                        },
+                    ]
+                }
+            }
+        ])
+        expect(popProcessedOperations('postproccessed')).toEqual([
+            {
+                operation: ['updateObject', 'user', { id: object1.id }, { displayName: 'Jon' }],
+                info: {
+                    changes: [
+                        {
+                            type: 'modify', collection: 'user',
+                            where: { id: object1.id },
+                            updates: { displayName: 'Jon' },
+                        },
+                    ]
+                }
+            }
+        ])
 
-    it('should correctly report deletions by updateObjects filtered by PK')
+        expect(await storageManager.collection('user').findObjects({})).toEqual([
+            { id: object1.id, displayName: 'Jon' },
+            { id: object2.id, displayName: 'Bob' },
+        ])
+    })
 
-    it('should correctly report deletions by updateObjects filtered by other fields')
+    it('should correctly report modifications by updateObjects filtered by PK', async () => {
+        const { storageManager, popProcessedOperations } = await setupTest()
+        const { object1, object2 } = await insertTestObjects({ storageManager, popProcessedOperations })
+
+        await storageManager.operation('updateObjects', 'user', { id: object1.id }, { displayName: 'Jon' })
+
+        expect(popProcessedOperations('preproccessed')).toEqual([
+            {
+                operation: ['updateObjects', 'user', { id: object1.id }, { displayName: 'Jon' }],
+                info: {
+                    changes: [
+                        {
+                            type: 'modify', collection: 'user',
+                            where: { id: object1.id },
+                            updates: { displayName: 'Jon' },
+                            pks: [object1.id]
+                        },
+                    ]
+                }
+            }
+        ])
+        expect(popProcessedOperations('postproccessed')).toEqual([
+            {
+                operation: ['updateObjects', 'user', { id: object1.id }, { displayName: 'Jon' }],
+                info: {
+                    changes: [
+                        {
+                            type: 'modify', collection: 'user',
+                            where: { id: object1.id },
+                            updates: { displayName: 'Jon' },
+                        },
+                    ]
+                }
+            }
+        ])
+
+        expect(await storageManager.collection('user').findObjects({})).toEqual([
+            { id: object1.id, displayName: 'Jon' },
+            { id: object2.id, displayName: 'Bob' },
+        ])
+    })
+
+    it('should correctly report modifications by updateObjects filtered by other fields', async () => {
+        const { storageManager, popProcessedOperations } = await setupTest({ userIndices: [] })
+        const { object1, object2 } = await insertTestObjects({ storageManager, popProcessedOperations })
+
+        await storageManager.operation('updateObjects', 'user', { displayName: 'Joe' }, { displayName: 'Jon' })
+
+        expect(popProcessedOperations('preproccessed')).toEqual([
+            {
+                operation: ['updateObjects', 'user', { displayName: 'Joe' }, { displayName: 'Jon' }],
+                info: {
+                    changes: [
+                        {
+                            type: 'modify', collection: 'user',
+                            where: { displayName: 'Joe' },
+                            updates: { displayName: 'Jon' },
+                            pks: [object1.id]
+                        },
+                    ]
+                }
+            }
+        ])
+        expect(popProcessedOperations('postproccessed')).toEqual([
+            {
+                operation: ['updateObjects', 'user', { displayName: 'Joe' }, { displayName: 'Jon' }],
+                info: {
+                    changes: [
+                        {
+                            type: 'modify', collection: 'user',
+                            where: { displayName: 'Joe' },
+                            updates: { displayName: 'Jon' },
+                        },
+                    ]
+                }
+            }
+        ])
+
+        expect(await storageManager.collection('user').findObjects({})).toEqual([
+            { id: object1.id, displayName: 'Jon' },
+            { id: object2.id, displayName: 'Bob' },
+        ])
+    })
+
+    it('should correctly report deletions by deleteObject filtered by PK', async () => {
+        const { storageManager, popProcessedOperations } = await setupTest()
+        const { object1, object2 } = await insertTestObjects({ storageManager, popProcessedOperations })
+
+        await storageManager.operation('deleteObject', 'user', { id: object1.id })
+
+        expect(popProcessedOperations('preproccessed')).toEqual([
+            {
+                operation: ['deleteObject', 'user', { id: object1.id }],
+                info: {
+                    changes: [
+                        {
+                            type: 'delete', collection: 'user',
+                            where: { id: object1.id },
+                            pks: [object1.id]
+                        },
+                    ]
+                }
+            }
+        ])
+        expect(popProcessedOperations('postproccessed')).toEqual([
+            {
+                operation: ['deleteObject', 'user', { id: object1.id }],
+                info: {
+                    changes: [
+                        {
+                            type: 'delete', collection: 'user',
+                            where: { id: object1.id },
+                        },
+                    ]
+                }
+            }
+        ])
+
+        expect(await storageManager.collection('user').findObjects({})).toEqual([
+            { id: object2.id, displayName: 'Bob' },
+        ])
+    })
+
+    it('should correctly report deletions by deleteObjects filtered by PK', async () => {
+        const { storageManager, popProcessedOperations } = await setupTest()
+        const { object1, object2 } = await insertTestObjects({ storageManager, popProcessedOperations })
+
+        await storageManager.operation('deleteObjects', 'user', { id: object1.id })
+
+        expect(popProcessedOperations('preproccessed')).toEqual([
+            {
+                operation: ['deleteObjects', 'user', { id: object1.id }],
+                info: {
+                    changes: [
+                        {
+                            type: 'delete', collection: 'user',
+                            where: { id: object1.id },
+                            pks: [object1.id]
+                        },
+                    ]
+                }
+            }
+        ])
+        expect(popProcessedOperations('postproccessed')).toEqual([
+            {
+                operation: ['deleteObjects', 'user', { id: object1.id }],
+                info: {
+                    changes: [
+                        {
+                            type: 'delete', collection: 'user',
+                            where: { id: object1.id },
+                        },
+                    ]
+                }
+            }
+        ])
+
+        expect(await storageManager.collection('user').findObjects({})).toEqual([
+            { id: object2.id, displayName: 'Bob' },
+        ])
+    })
+
+    it('should correctly report deletions by deleteObjects filtered by other fields', async () => {
+        const { storageManager, popProcessedOperations } = await setupTest()
+        const { object1, object2 } = await insertTestObjects({ storageManager, popProcessedOperations })
+
+        await storageManager.operation('deleteObjects', 'user', { displayName: 'Joe' })
+
+        expect(popProcessedOperations('preproccessed')).toEqual([
+            {
+
+                operation: ['deleteObjects', 'user', { displayName: 'Joe' }],
+                info: {
+                    changes: [
+                        {
+                            type: 'delete', collection: 'user',
+                            where: { displayName: 'Joe' },
+                            pks: [object1.id]
+                        },
+                    ]
+                }
+            }
+        ])
+        expect(popProcessedOperations('postproccessed')).toEqual([
+            {
+                operation: ['deleteObjects', 'user', { displayName: 'Joe' }],
+                info: {
+                    changes: [
+                        {
+                            type: 'delete', collection: 'user',
+                            where: { displayName: 'Joe' },
+                        },
+                    ]
+                }
+            }
+        ])
+
+        expect(await storageManager.collection('user').findObjects({})).toEqual([
+            { id: object2.id, displayName: 'Bob' },
+        ])
+    })
 
     it('should let operations through if not enabled', async () => {
         const setup = await setupTest()
