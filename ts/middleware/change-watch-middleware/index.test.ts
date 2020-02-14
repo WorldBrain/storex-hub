@@ -104,6 +104,16 @@ describe('ChangeWatchMiddleware', () => {
                 }
             }
         ])
+        expect(popProcessedOperations('postproccessed')).toEqual([
+            {
+                operation: ['createObject', 'user', creation.objectValues],
+                info: {
+                    changes: [
+                        { type: 'create', collection: 'user', pk: creation.object.id, values: creation.objectValues }
+                    ]
+                }
+            }
+        ])
 
         await verifiyTestCreate(storageManager, creation)
     })
@@ -146,6 +156,7 @@ describe('ChangeWatchMiddleware', () => {
     it('should let operations through if not passed a preprocessor', async () => {
         const setup = await setupTest({
             preprocesses: false,
+            postprocesses: false,
         })
 
         await testCreateWithoutLogging(setup)

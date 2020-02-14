@@ -1,3 +1,4 @@
+import cloneDeep from 'lodash/cloneDeep'
 import StorageManager, { CollectionDefinition } from "@worldbrain/storex";
 import { StorageMiddlewareContext, StorageMiddleware } from "@worldbrain/storex/lib/types/middleware";
 import { StorageChange, StorageOperationChangeInfo, StorageOperationWatcher } from "./types";
@@ -25,7 +26,7 @@ export class ChangeWatchMiddleware implements StorageMiddleware {
     }
 
     async process(context: StorageMiddlewareContext) {
-        const executeNext = () => context.next.process({ operation: context.operation })
+        const executeNext = () => context.next.process({ operation: cloneDeep(context.operation) })
         if (!this.enabled) {
             return executeNext()
         }
@@ -35,12 +36,16 @@ export class ChangeWatchMiddleware implements StorageMiddleware {
             return executeNext()
         }
 
+        const originalOperation = cloneDeep(context.operation)
         if (this.options.preprocessOperation) {
-            const preInfo = watcher.getInfoBeforeExecution(context)
-            await this.options.preprocessOperation([...context.operation], preInfo)
+            const info = watcher.getInfoBeforeExecution(context)
+            await this.options.preprocessOperation(originalOperation, info)
         }
-        watcher.modifyOperation?.(context.operation)
         const result = await executeNext()
+        if (this.options.postprocessOperation) {
+            const info = watcher.getInfoAfterExecution({ operation: originalOperation, result })
+            await this.options.postprocessOperation(originalOperation, info)
+        }
         return result
     }
 }

@@ -12,14 +12,18 @@ const createObject: StorageOperationWatcher = {
             ]
         }
     },
-    getInfoAfterExecution(context: { operation: any[] }) {
-        return { changes: [] }
+    getInfoAfterExecution(context: { operation: any[], result: any }) {
+        return {
+            changes: [
+                {
+                    type: 'create',
+                    collection: context.operation[1],
+                    pk: context.result.object.id,
+                    values: context.operation[2],
+                }
+            ]
+        }
     },
-
-    // temporary hack until bug is resolved
-    modifyOperation(operation) {
-        operation[2] = { ...operation[2] }
-    }
 }
 
 export const DEFAULT_OPERATION_WATCHERS = {

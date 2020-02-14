@@ -29,5 +29,4 @@ export interface StorageOperationChangeInfo<WithPk extends boolean> {
 export interface StorageOperationWatcher {
     getInfoBeforeExecution(context: { operation: any[] }): StorageOperationChangeInfo<false>
     getInfoAfterExecution(context: { operation: any[], result: any }): StorageOperationChangeInfo<true>
-    modifyOperation?(operation: any[]): void
 }
