@@ -1,3 +1,4 @@
+import cloneDeep from 'lodash/cloneDeep'
 import StorageManager, { CollectionFields, IndexDefinition } from "@worldbrain/storex"
 import { DexieStorageBackend } from "@worldbrain/storex-backend-dexie"
 import inMemory from "@worldbrain/storex-backend-dexie/lib/in-memory"
@@ -105,24 +106,26 @@ describe('ChangeWatchMiddleware', () => {
         const { storageManager, popProcessedOperations } = await setupTest()
         const creation = await executeTestCreate(storageManager)
 
+        const expectedPreInfo: StorageOperationChangeInfo<'pre'> = {
+            changes: [
+                { type: 'create', collection: 'user', values: creation.objectValues }
+            ]
+        }
         expect(popProcessedOperations('preproccessed')).toEqual([
             {
                 operation: ['createObject', 'user', creation.objectValues],
-                info: {
-                    changes: [
-                        { type: 'create', collection: 'user', values: creation.objectValues }
-                    ]
-                }
+                info: expectedPreInfo
             }
         ])
+        const expectedPostInfo: StorageOperationChangeInfo<'post'> = {
+            changes: [
+                { type: 'create', collection: 'user', pk: creation.object.id, values: creation.objectValues }
+            ]
+        }
         expect(popProcessedOperations('postproccessed')).toEqual([
             {
                 operation: ['createObject', 'user', creation.objectValues],
-                info: {
-                    changes: [
-                        { type: 'create', collection: 'user', pk: creation.object.id, values: creation.objectValues }
-                    ]
-                }
+                info: expectedPostInfo
             }
         ])
 
@@ -133,24 +136,26 @@ describe('ChangeWatchMiddleware', () => {
         const { storageManager, popProcessedOperations } = await setupTest()
         const creation = await executeTestCreate(storageManager, { id: 5 })
 
+        const expectedPreInfo: StorageOperationChangeInfo<'pre'> = {
+            changes: [
+                { type: 'create', collection: 'user', values: { ...creation.objectValues, id: 5 } }
+            ]
+        }
         expect(popProcessedOperations('preproccessed')).toEqual([
             {
                 operation: ['createObject', 'user', { ...creation.objectValues, id: 5 }],
-                info: {
-                    changes: [
-                        { type: 'create', collection: 'user', values: { ...creation.objectValues, id: 5 } }
-                    ]
-                }
+                info: expectedPreInfo
             }
         ])
+        const expectedPostInfo: StorageOperationChangeInfo<'post'> = {
+            changes: [
+                { type: 'create', collection: 'user', pk: creation.object.id, values: { ...creation.objectValues, id: 5 } }
+            ]
+        }
         expect(popProcessedOperations('postproccessed')).toEqual([
             {
                 operation: ['createObject', 'user', { ...creation.objectValues, id: 5 }],
-                info: {
-                    changes: [
-                        { type: 'create', collection: 'user', pk: creation.object.id, values: { ...creation.objectValues, id: 5 } }
-                    ]
-                }
+                info: expectedPostInfo
             }
         ])
 
@@ -163,33 +168,35 @@ describe('ChangeWatchMiddleware', () => {
 
         await storageManager.operation('updateObject', 'user', { id: object1.id }, { displayName: 'Jon' })
 
+        const expectedPreInfo: StorageOperationChangeInfo<'pre'> = {
+            changes: [
+                {
+                    type: 'modify', collection: 'user',
+                    where: { id: object1.id },
+                    updates: { displayName: 'Jon' },
+                    pks: [object1.id]
+                },
+            ]
+        }
         expect(popProcessedOperations('preproccessed')).toEqual([
             {
                 operation: ['updateObject', 'user', { id: object1.id }, { displayName: 'Jon' }],
-                info: {
-                    changes: [
-                        {
-                            type: 'modify', collection: 'user',
-                            where: { id: object1.id },
-                            updates: { displayName: 'Jon' },
-                            pks: [object1.id]
-                        },
-                    ]
-                }
+                info: expectedPreInfo
             }
         ])
+        const expectedPostInfo: StorageOperationChangeInfo<'post'> = {
+            changes: [
+                {
+                    type: 'modify', collection: 'user',
+                    where: { id: object1.id },
+                    updates: { displayName: 'Jon' },
+                },
+            ]
+        }
         expect(popProcessedOperations('postproccessed')).toEqual([
             {
                 operation: ['updateObject', 'user', { id: object1.id }, { displayName: 'Jon' }],
-                info: {
-                    changes: [
-                        {
-                            type: 'modify', collection: 'user',
-                            where: { id: object1.id },
-                            updates: { displayName: 'Jon' },
-                        },
-                    ]
-                }
+                info: expectedPostInfo
             }
         ])
 
@@ -205,33 +212,35 @@ describe('ChangeWatchMiddleware', () => {
 
         await storageManager.operation('updateObjects', 'user', { id: object1.id }, { displayName: 'Jon' })
 
+        const expectedPreInfo: StorageOperationChangeInfo<'pre'> = {
+            changes: [
+                {
+                    type: 'modify', collection: 'user',
+                    where: { id: object1.id },
+                    updates: { displayName: 'Jon' },
+                    pks: [object1.id]
+                },
+            ]
+        }
         expect(popProcessedOperations('preproccessed')).toEqual([
             {
                 operation: ['updateObjects', 'user', { id: object1.id }, { displayName: 'Jon' }],
-                info: {
-                    changes: [
-                        {
-                            type: 'modify', collection: 'user',
-                            where: { id: object1.id },
-                            updates: { displayName: 'Jon' },
-                            pks: [object1.id]
-                        },
-                    ]
-                }
+                info: expectedPreInfo
             }
         ])
+        const expectedPostInfo: StorageOperationChangeInfo<'post'> = {
+            changes: [
+                {
+                    type: 'modify', collection: 'user',
+                    where: { id: object1.id },
+                    updates: { displayName: 'Jon' },
+                },
+            ]
+        }
         expect(popProcessedOperations('postproccessed')).toEqual([
             {
                 operation: ['updateObjects', 'user', { id: object1.id }, { displayName: 'Jon' }],
-                info: {
-                    changes: [
-                        {
-                            type: 'modify', collection: 'user',
-                            where: { id: object1.id },
-                            updates: { displayName: 'Jon' },
-                        },
-                    ]
-                }
+                info: expectedPostInfo
             }
         ])
 
@@ -247,33 +256,35 @@ describe('ChangeWatchMiddleware', () => {
 
         await storageManager.operation('updateObjects', 'user', { displayName: 'Joe' }, { displayName: 'Jon' })
 
+        const expectedPreInfo: StorageOperationChangeInfo<'pre'> = {
+            changes: [
+                {
+                    type: 'modify', collection: 'user',
+                    where: { displayName: 'Joe' },
+                    updates: { displayName: 'Jon' },
+                    pks: [object1.id]
+                },
+            ]
+        }
         expect(popProcessedOperations('preproccessed')).toEqual([
             {
                 operation: ['updateObjects', 'user', { displayName: 'Joe' }, { displayName: 'Jon' }],
-                info: {
-                    changes: [
-                        {
-                            type: 'modify', collection: 'user',
-                            where: { displayName: 'Joe' },
-                            updates: { displayName: 'Jon' },
-                            pks: [object1.id]
-                        },
-                    ]
-                }
+                info: expectedPreInfo
             }
         ])
+        const expectedPostInfo: StorageOperationChangeInfo<'post'> = {
+            changes: [
+                {
+                    type: 'modify', collection: 'user',
+                    where: { displayName: 'Joe' },
+                    updates: { displayName: 'Jon' },
+                },
+            ]
+        }
         expect(popProcessedOperations('postproccessed')).toEqual([
             {
                 operation: ['updateObjects', 'user', { displayName: 'Joe' }, { displayName: 'Jon' }],
-                info: {
-                    changes: [
-                        {
-                            type: 'modify', collection: 'user',
-                            where: { displayName: 'Joe' },
-                            updates: { displayName: 'Jon' },
-                        },
-                    ]
-                }
+                info: expectedPostInfo
             }
         ])
 
@@ -289,31 +300,33 @@ describe('ChangeWatchMiddleware', () => {
 
         await storageManager.operation('deleteObject', 'user', { id: object1.id })
 
+        const expectedPreInfo: StorageOperationChangeInfo<'pre'> = {
+            changes: [
+                {
+                    type: 'delete', collection: 'user',
+                    where: { id: object1.id },
+                    pks: [object1.id]
+                },
+            ]
+        }
         expect(popProcessedOperations('preproccessed')).toEqual([
             {
                 operation: ['deleteObject', 'user', { id: object1.id }],
-                info: {
-                    changes: [
-                        {
-                            type: 'delete', collection: 'user',
-                            where: { id: object1.id },
-                            pks: [object1.id]
-                        },
-                    ]
-                }
+                info: expectedPreInfo
             }
         ])
+        const expectedPostInfo: StorageOperationChangeInfo<'post'> = {
+            changes: [
+                {
+                    type: 'delete', collection: 'user',
+                    where: { id: object1.id },
+                },
+            ]
+        }
         expect(popProcessedOperations('postproccessed')).toEqual([
             {
                 operation: ['deleteObject', 'user', { id: object1.id }],
-                info: {
-                    changes: [
-                        {
-                            type: 'delete', collection: 'user',
-                            where: { id: object1.id },
-                        },
-                    ]
-                }
+                info: expectedPostInfo
             }
         ])
 
@@ -328,31 +341,33 @@ describe('ChangeWatchMiddleware', () => {
 
         await storageManager.operation('deleteObjects', 'user', { id: object1.id })
 
+        const expectedPreInfo: StorageOperationChangeInfo<'pre'> = {
+            changes: [
+                {
+                    type: 'delete', collection: 'user',
+                    where: { id: object1.id },
+                    pks: [object1.id]
+                },
+            ]
+        }
         expect(popProcessedOperations('preproccessed')).toEqual([
             {
                 operation: ['deleteObjects', 'user', { id: object1.id }],
-                info: {
-                    changes: [
-                        {
-                            type: 'delete', collection: 'user',
-                            where: { id: object1.id },
-                            pks: [object1.id]
-                        },
-                    ]
-                }
+                info: expectedPreInfo
             }
         ])
+        const expectedPostInfo: StorageOperationChangeInfo<'post'> = {
+            changes: [
+                {
+                    type: 'delete', collection: 'user',
+                    where: { id: object1.id },
+                },
+            ]
+        }
         expect(popProcessedOperations('postproccessed')).toEqual([
             {
                 operation: ['deleteObjects', 'user', { id: object1.id }],
-                info: {
-                    changes: [
-                        {
-                            type: 'delete', collection: 'user',
-                            where: { id: object1.id },
-                        },
-                    ]
-                }
+                info: expectedPostInfo
             }
         ])
 
@@ -367,37 +382,90 @@ describe('ChangeWatchMiddleware', () => {
 
         await storageManager.operation('deleteObjects', 'user', { displayName: 'Joe' })
 
+        const expectedPreInfo: StorageOperationChangeInfo<'pre'> = {
+            changes: [
+                {
+                    type: 'delete', collection: 'user',
+                    where: { displayName: 'Joe' },
+                    pks: [object1.id]
+                },
+            ]
+        }
         expect(popProcessedOperations('preproccessed')).toEqual([
             {
 
                 operation: ['deleteObjects', 'user', { displayName: 'Joe' }],
-                info: {
-                    changes: [
-                        {
-                            type: 'delete', collection: 'user',
-                            where: { displayName: 'Joe' },
-                            pks: [object1.id]
-                        },
-                    ]
-                }
+                info: expectedPreInfo
             }
         ])
+        const expectedPostInfo: StorageOperationChangeInfo<'post'> = {
+            changes: [
+                {
+                    type: 'delete', collection: 'user',
+                    where: { displayName: 'Joe' },
+                },
+            ]
+        }
         expect(popProcessedOperations('postproccessed')).toEqual([
             {
                 operation: ['deleteObjects', 'user', { displayName: 'Joe' }],
-                info: {
-                    changes: [
-                        {
-                            type: 'delete', collection: 'user',
-                            where: { displayName: 'Joe' },
-                        },
-                    ]
-                }
+                info: expectedPostInfo
             }
         ])
 
         expect(await storageManager.collection('user').findObjects({})).toEqual([
             { id: object2.id, displayName: 'Bob' },
+        ])
+    })
+
+    it('should correctly report changes through batch operations', async () => {
+        const { storageManager, popProcessedOperations } = await setupTest()
+        const { object1, object2 } = await insertTestObjects({ storageManager, popProcessedOperations })
+
+        const batch = [
+            {
+                placeholder: 'jane',
+                operation: 'createObject',
+                collection: 'user',
+                args: {
+                    displayName: 'Jane'
+                }
+            },
+            { operation: 'updateObjects', collection: 'user', where: { id: object1.id }, updates: { displayName: 'Jack' } },
+            { operation: 'deleteObjects', collection: 'user', where: { id: object2.id } },
+        ]
+        const batchResult = await storageManager.operation('executeBatch', cloneDeep(batch))
+
+        const expectedPreInfo: StorageOperationChangeInfo<'pre'> = {
+            changes: [
+                { type: 'create', collection: 'user', values: { displayName: 'Jane' } },
+                { type: 'modify', collection: 'user', where: batch[1].where!, updates: batch[1].updates!, pks: [object1.id] },
+                { type: 'delete', collection: 'user', where: batch[2].where!, pks: [object2.id] },
+            ]
+        }
+        expect(popProcessedOperations('preproccessed')).toEqual([
+            {
+                operation: ['executeBatch', batch],
+                info: expectedPreInfo
+            }
+        ])
+        // expect(popProcessedOperations('postproccessed')).toEqual([
+        //     {
+        //         operation: ['deleteObjects', 'user', { displayName: 'Joe' }],
+        //         info: {
+        //             changes: [
+        //                 {
+        //                     type: 'delete', collection: 'user',
+        //                     where: { displayName: 'Joe' },
+        //                 },
+        //             ]
+        //         }
+        //     }
+        // ])
+
+        expect(await storageManager.collection('user').findObjects({})).toEqual([
+            { id: object1.id, displayName: 'Jack' },
+            { id: batchResult.info.jane.object.id, displayName: 'Jane' }
         ])
     })
 
