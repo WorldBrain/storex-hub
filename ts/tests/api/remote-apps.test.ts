@@ -32,7 +32,9 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         ])
         expect(response).toEqual({
             status: 'success',
-            result: ['foo', 'bla']
+            result: {
+                result: ['foo', 'bla']
+            }
         })
     })
 

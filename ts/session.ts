@@ -9,6 +9,7 @@ export interface SessionOptions {
     accessTokenManager: AccessTokenManager
     getStorage: () => Promise<Storage>
     updateStorage: () => Promise<void>
+
     executeCallback: (
         (appIdentifier: string, methodName: string, methodOptions: any)
             => Promise<api.ExecuteRemoteOperationResult_v0>
@@ -16,6 +17,8 @@ export interface SessionOptions {
     subscribeToEvent: (options: api.SubscribeToRemoveEventOptions_v0) => Promise<api.SubscribeToRemoveEventResult_v0>
     unsubscribeFromEvent: (options: api.UnsubscribeFromRemoveEventOptions_v0) => Promise<api.UnsubscribeFromRemoveEventResult_v0>
     emitEvent: (options: api.EmitEventOptions_v0) => Promise<api.EmitEventResult_v0>
+
+    destroy: () => Promise<void>
 
     // executeCallback: (
     //     <MethodName extends keyof StorexHubCallbacks_v0>
@@ -120,6 +123,10 @@ export class Session implements api.StorexHubApi_v0 {
 
     async emitEvent(options: api.EmitEventOptions_v0): Promise<api.EmitEventResult_v0> {
         return this.options.emitEvent(options)
+    }
+
+    async destroy() {
+        await this.options.destroy()
     }
 }
 

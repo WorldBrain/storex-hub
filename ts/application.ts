@@ -100,6 +100,9 @@ export class Application {
                 }
 
                 appEvents.emit(event.type, event)
+            },
+            destroy: async () => {
+
             }
         })
         session.events.once('appIdentified', (event: SingleArgumentOf<SessionEvents['appIdentified']>) => {

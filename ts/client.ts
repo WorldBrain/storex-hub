@@ -45,14 +45,22 @@ export async function createStorexHubSocketClient(socket: SocketIOClient.Socket,
 
     await Promise.race([waitForConnection, waitForError])
 
+    let requestCount = 0
     return createStorexHubClient(
         async (methodName, options) => {
+            const requestId = ++requestCount
+
             const waitForResponse = new Promise<{ result: any }>((resolve, reject) => {
-                socket.once('response', (response: any) => {
-                    resolve(response)
-                })
+                const handler = (response: any) => {
+                    if (response.requestId === requestId) {
+                        socket.removeListener('response', handler)
+                        resolve({ result: response.result })
+                    }
+                }
+                socket.addEventListener('response', handler)
             })
             socket.emit('request', {
+                requestId,
                 methodName,
                 methodOptions: options.methodOptions,
             })

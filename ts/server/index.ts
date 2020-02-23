@@ -93,7 +93,7 @@ function setupWebsocketServer(io: SocketIO.Server, application: Application) {
     })
     sessions.setup(io)
 
-    io.on('request', async (message: { socket: SocketIO.Socket, event: string, data: { methodName: string, methodOptions: any } }) => {
+    io.on('request', async (message: { socket: SocketIO.Socket, event: string, data: { requestId: string | number, methodName: string, methodOptions: any } }) => {
         const api = await sessions.getSession(message.socket)
         let result: any
         let success = false
@@ -104,9 +104,9 @@ function setupWebsocketServer(io: SocketIO.Server, application: Application) {
             console.error(e)
         }
         if (success) {
-            message.socket.emit('response', { result })
+            message.socket.emit('response', { requestId: message.data.requestId, result })
         } else {
-            message.socket.emit('response', { error: 'internal' })
+            message.socket.emit('response', { requestId: message.data.requestId, error: 'internal' })
         }
     })
     return io
