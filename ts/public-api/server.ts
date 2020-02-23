@@ -1,4 +1,6 @@
 import { AppSchema } from '../types/apps';
+import { StorageOperationChangeInfo } from '@worldbrain/storex-middleware-change-watcher/lib/types';
+import { RemoteSubscriptionRequest_v0 } from './common';
 
 export interface StorexHubApi_v0 {
     registerApp(options: RegisterAppOptions_v0): Promise<RegisterAppResult_v0>
@@ -8,7 +10,9 @@ export interface StorexHubApi_v0 {
 
     executeOperation(options: { operation: any[] }): Promise<{ result: any }>
 
-    executeRemoteOperation(options: ExecuteRemoteOperationOptions_v0): Promise<{ result: any }>
+    executeRemoteOperation(options: ExecuteRemoteOperationOptions_v0): Promise<ExecuteRemoteOperationResult_v0>
+    subscribeToRemoveEvent(options: SubscribeToRemoveEventOptions_v0): Promise<SubscribeToRemoveEventResult_v0>
+    emitEvent(options: EmitEventOptions_v0): Promise<EmitEventResult_v0>
 
     // requestPriviliges(options : {  }) : Promise<{}>
     // listPrivileges() : Promise<{}>
@@ -64,6 +68,29 @@ export interface ExecuteRemoteOperationOptions_v0 {
     app: string
     operation: any[]
 }
+export type ExecuteRemoteOperationResult_v0 =
+    { status: 'app-not-found' } |
+    { status: 'app-not-supported' } |
+    { status: 'success', result: any }
+
+export interface SubscribeToRemoveEventOptions_v0 {
+    request: RemoteSubscriptionRequest_v0
+}
+export type SubscribeToRemoveEventResult_v0 =
+    { status: 'app-not-found' } |
+    { status: 'app-not-supported' } |
+    { status: 'success' }
+
+export interface EmitEventOptions_v0 {
+    event: EmittableEvent_v0
+}
+export type EmitEventResult_v0 = void
+
+export type EmittableEvent_v0 = StorageChangeEvent_v0
+export interface StorageChangeEvent_v0 {
+    type: 'storage-change'
+    info: StorageOperationChangeInfo<'post'>
+}
 
 export interface UpdateSchemaOptions_v0 {
     schema: AppSchema
@@ -100,5 +127,11 @@ export const STOREX_HUB_API_v0: { [MethodName in keyof StorexHubApi_v0]: MethodD
     },
     executeRemoteOperation: {
         path: '/remote/operation'
+    },
+    subscribeToRemoveEvent: {
+        path: '/remote/event/subscribe'
+    },
+    emitEvent: {
+        path: '/event/emit'
     }
 }

@@ -16,8 +16,10 @@
   "keywords": [],
   "author": "Vincent den Boer",
   "dependencies": {
+    "@josephg/resolvable": "^1.0.0",
     "@types/koa-session": "^5.10.1",
     "@worldbrain/storex": "^0.3.7",
+    "@worldbrain/storex-middleware-change-watcher": "^0.1.0",
     "@worldbrain/storex-backend-typeorm": "^0.1.0",
     "@worldbrain/storex-pattern-modules": "^0.3.0",
     "koa": "^2.11.0",

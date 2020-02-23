@@ -1,12 +1,9 @@
 import * as api from "./public-api";
-import { CollectionDefinitionMap } from "@worldbrain/storex";
 import TypedEmitter from 'typed-emitter'
 import { AccessTokenManager } from "./access-tokens";
 import { Storage } from "./storage/types";
 import { AppSchema } from "./types/apps";
 import { EventEmitter } from "events";
-import { StorexHubCallbacks_v0, ExecuteRemoteOperationOptions_v0 } from "./public-api";
-import { SingleArgumentOf } from "./types/utils";
 
 export interface SessionOptions {
     accessTokenManager: AccessTokenManager
@@ -14,8 +11,10 @@ export interface SessionOptions {
     updateStorage: () => Promise<void>
     executeCallback: (
         (appIdentifier: string, methodName: string, methodOptions: any)
-            => Promise<any>
+            => Promise<api.ExecuteRemoteOperationResult_v0>
     )
+    subscribeToEvent: (options: api.SubscribeToRemoveEventOptions_v0) => Promise<api.SubscribeToRemoveEventResult_v0>
+    emitEvent: (options: api.EmitEventOptions_v0) => Promise<api.EmitEventResult_v0>
 
     // executeCallback: (
     //     <MethodName extends keyof StorexHubCallbacks_v0>
@@ -33,8 +32,7 @@ interface IdentifiedApp {
 }
 export class Session implements api.StorexHubApi_v0 {
     events: TypedEmitter<SessionEvents> = new EventEmitter() as TypedEmitter<SessionEvents>
-
-    private identifiedApp?: IdentifiedApp
+    identifiedApp?: IdentifiedApp
 
     constructor(private options: SessionOptions) {
     }
@@ -105,10 +103,18 @@ export class Session implements api.StorexHubApi_v0 {
         return { success: true }
     }
 
-    async executeRemoteOperation(options: ExecuteRemoteOperationOptions_v0): Promise<{ result: any }> {
+    async executeRemoteOperation(options: api.ExecuteRemoteOperationOptions_v0): Promise<api.ExecuteRemoteOperationResult_v0> {
         return this.options.executeCallback(options.app, 'handleRemoteOperation', {
             operation: options.operation,
         })
+    }
+
+    async subscribeToRemoveEvent(options: api.SubscribeToRemoveEventOptions_v0): Promise<api.SubscribeToRemoveEventResult_v0> {
+        return this.options.subscribeToEvent(options)
+    }
+
+    async emitEvent(options: api.EmitEventOptions_v0): Promise<api.EmitEventResult_v0> {
+        return this.options.emitEvent(options)
     }
 }
 
