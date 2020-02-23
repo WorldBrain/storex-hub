@@ -95,8 +95,19 @@ function setupWebsocketServer(io: SocketIO.Server, application: Application) {
 
     io.on('request', async (message: { socket: SocketIO.Socket, event: string, data: { methodName: string, methodOptions: any } }) => {
         const api = await sessions.getSession(message.socket)
-        const result = await api[message.data.methodName](message.data.methodOptions)
-        message.socket.emit('response', { result })
+        let result: any
+        let success = false
+        try {
+            result = await api[message.data.methodName](message.data.methodOptions)
+            success = true
+        } catch (e) {
+            console.error(e)
+        }
+        if (success) {
+            message.socket.emit('response', { result })
+        } else {
+            message.socket.emit('response', { error: 'internal' })
+        }
     })
     return io
 }

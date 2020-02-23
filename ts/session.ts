@@ -14,6 +14,7 @@ export interface SessionOptions {
             => Promise<api.ExecuteRemoteOperationResult_v0>
     )
     subscribeToEvent: (options: api.SubscribeToRemoveEventOptions_v0) => Promise<api.SubscribeToRemoveEventResult_v0>
+    unsubscribeFromEvent: (options: api.UnsubscribeFromRemoveEventOptions_v0) => Promise<api.UnsubscribeFromRemoveEventResult_v0>
     emitEvent: (options: api.EmitEventOptions_v0) => Promise<api.EmitEventResult_v0>
 
     // executeCallback: (
@@ -111,6 +112,10 @@ export class Session implements api.StorexHubApi_v0 {
 
     async subscribeToRemoveEvent(options: api.SubscribeToRemoveEventOptions_v0): Promise<api.SubscribeToRemoveEventResult_v0> {
         return this.options.subscribeToEvent(options)
+    }
+
+    async unsubscribeFromRemoveEvent(options: api.UnsubscribeFromRemoveEventOptions_v0): Promise<api.UnsubscribeFromRemoveEventResult_v0> {
+        return this.options.unsubscribeFromEvent(options)
     }
 
     async emitEvent(options: api.EmitEventOptions_v0): Promise<api.EmitEventResult_v0> {

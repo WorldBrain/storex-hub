@@ -1,3 +1,4 @@
+import uuid from 'uuid/v4'
 import { StorageBackend } from "@worldbrain/storex";
 import { StorexHubApi_v0, StorexHubCallbacks_v0, ClientEvent } from "./public-api";
 import { Session, SessionEvents } from "./session";
@@ -29,6 +30,8 @@ export class Application {
     }
 
     async api(options?: ApplicationApiOptions): Promise<StorexHubApi_v0> {
+        const subscriptions: { [subscriptionId: string]: { unsubscribe: () => Promise<void> } } = {}
+
         const session = new Session({
             accessTokenManager: this.options.accessTokenManager,
             getStorage: () => this.storage,
@@ -58,12 +61,33 @@ export class Application {
                     return { status: 'app-not-found' }
                 }
 
-                await remoteSession.handleSubscription?.({ request })
+                const subscriptionResult = await remoteSession.handleSubscription?.({ request })
+                if (!subscriptionResult) {
+                    return { status: 'app-not-supported' }
+                }
+
                 const handler = (event: ClientEvent) => {
                     options?.callbacks?.handleEvent?.({ event })
                 }
-                appEvents.on(request.type, handler)
-                return { status: 'success' }
+                appEvents.addListener(request.type, handler)
+
+                const subscriptionId = uuid()
+                subscriptions[subscriptionId] = {
+                    async unsubscribe() {
+                        appEvents.removeListener(request.type, handler)
+                        await remoteSession.handleUnsubscription?.({ subscriptionId: subscriptionResult.subscriptionId })
+                    }
+                }
+                return { status: 'success', subscriptionId }
+            },
+            unsubscribeFromEvent: async ({ subscriptionId }) => {
+                const subscription = subscriptions[subscriptionId]
+                if (!subscription) {
+                    throw new Error(`Got invalid subscription ID trying to unsubscribe from event`)
+                }
+
+                await subscription.unsubscribe()
+                delete subscriptions[subscriptionId]
             },
             emitEvent: async ({ event }) => {
                 if (!session.identifiedApp) {

@@ -12,6 +12,7 @@ export interface StorexHubApi_v0 {
 
     executeRemoteOperation(options: ExecuteRemoteOperationOptions_v0): Promise<ExecuteRemoteOperationResult_v0>
     subscribeToRemoveEvent(options: SubscribeToRemoveEventOptions_v0): Promise<SubscribeToRemoveEventResult_v0>
+    unsubscribeFromRemoveEvent(options: UnsubscribeFromRemoveEventOptions_v0): Promise<UnsubscribeFromRemoveEventResult_v0>
     emitEvent(options: EmitEventOptions_v0): Promise<EmitEventResult_v0>
 
     // requestPriviliges(options : {  }) : Promise<{}>
@@ -79,7 +80,12 @@ export interface SubscribeToRemoveEventOptions_v0 {
 export type SubscribeToRemoveEventResult_v0 =
     { status: 'app-not-found' } |
     { status: 'app-not-supported' } |
-    { status: 'success' }
+    { status: 'success', subscriptionId: string }
+
+export interface UnsubscribeFromRemoveEventOptions_v0 {
+    subscriptionId: string
+}
+export type UnsubscribeFromRemoveEventResult_v0 = void
 
 export interface EmitEventOptions_v0 {
     event: EmittableEvent_v0
@@ -130,6 +136,9 @@ export const STOREX_HUB_API_v0: { [MethodName in keyof StorexHubApi_v0]: MethodD
     },
     subscribeToRemoveEvent: {
         path: '/remote/event/subscribe'
+    },
+    unsubscribeFromRemoveEvent: {
+        path: '/remote/event/unsubscribe'
     },
     emitEvent: {
         path: '/event/emit'
