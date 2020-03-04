@@ -99,7 +99,10 @@ export class Application {
                     throw new Error(`App ${session.identifiedApp.identifier} is not a remote app`)
                 }
 
-                appEvents.emit(event.type, event)
+                appEvents.emit(event.type, {
+                    ...event,
+                    app: session.identifiedApp.identifier
+                })
             },
             destroy: async () => {
 

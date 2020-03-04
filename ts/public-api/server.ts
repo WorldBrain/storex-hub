@@ -1,6 +1,5 @@
 import { AppSchema } from '../types/apps';
-import { StorageOperationChangeInfo } from '@worldbrain/storex-middleware-change-watcher/lib/types';
-import { RemoteSubscriptionRequest_v0 } from './common';
+import { RemoteSubscriptionRequest_v0, SentStorageChangeEvent_v0 } from './common';
 
 export interface StorexHubApi_v0 {
     registerApp(options: RegisterAppOptions_v0): Promise<RegisterAppResult_v0>
@@ -92,11 +91,7 @@ export interface EmitEventOptions_v0 {
 }
 export type EmitEventResult_v0 = void
 
-export type EmittableEvent_v0 = StorageChangeEvent_v0
-export interface StorageChangeEvent_v0 {
-    type: 'storage-change'
-    info: StorageOperationChangeInfo<'post'>
-}
+export type EmittableEvent_v0 = SentStorageChangeEvent_v0
 
 export interface UpdateSchemaOptions_v0 {
     schema: AppSchema

@@ -6,6 +6,7 @@ import { ChangeWatchMiddleware } from '@worldbrain/storex-middleware-change-watc
 import inMemory from '@worldbrain/storex-backend-dexie/lib/in-memory'
 import { createMultiApiTestSuite, TestSetup, MultiApiOptions } from "./index.tests";
 import * as api from "../../public-api";
+import { ClientEvent } from '../../public-api';
 
 export default createMultiApiTestSuite('Remote apps', ({ it }) => {
     it('should be able to proxy operations into a remote app', async ({ application }) => {
@@ -131,23 +132,23 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
             name: 'bla'
         })
 
-        expect(events).toEqual([
+        const expectedEvents: ClientEvent[] = [
             {
-                type: "storage-change",
+                type: 'storage-change',
+                app: 'memex',
                 info: {
                     changes: [
                         {
                             type: "create",
                             collection: "tags",
-                            values: {
-                                name: "bla",
-                                url: "foo.com/test",
-                            },
+                            pk: ['bla', 'foo.com/test'],
+                            values: {},
                         },
                     ],
                 },
             },
-        ])
+        ];
+        expect(events).toEqual(expectedEvents)
     })
 
     it('should be able to let remote apps signal changes to their local storage and unsubscribe from events', async ({ application }) => {
@@ -169,15 +170,14 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         expect(events).toEqual([
             {
                 type: "storage-change",
+                app: 'memex',
                 info: {
                     changes: [
                         {
                             type: "create",
                             collection: "tags",
-                            values: {
-                                name: "bla",
-                                url: "foo.com/test",
-                            },
+                            pk: ['bla', 'foo.com/test'],
+                            values: {},
                         },
                     ],
                 },

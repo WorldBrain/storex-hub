@@ -1,4 +1,4 @@
-import { RemoteSubscriptionRequest_v0 } from "./common"
+import { RemoteSubscriptionRequest_v0, ReceivedStorageChangeEvent_v0 } from "./common"
 
 export interface StorexHubCallbacks_v0 {
     handleRemoteOperation?(options: HandleRemoteOperationOptions_v0): Promise<HandleRemoteOperationResult_v0>
@@ -19,12 +19,7 @@ export interface HandleEventOptions_v0 {
     event: ClientEvent
 }
 
-export type ClientEvent = RemoteStorageChangeEvent
-export interface RemoteStorageChangeEvent {
-    type: 'remote-storage-change'
-    app: string
-    change: string
-}
+export type ClientEvent = ReceivedStorageChangeEvent_v0
 
 export type HandleEventResult_v0 = void
 
