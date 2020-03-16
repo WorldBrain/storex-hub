@@ -11,12 +11,14 @@ import { createHttpServer } from '../../server';
 import { StorexHubApi_v0, StorexHubCallbacks_v0 } from '../../public-api';
 import { createStorexHubClient, createStorexHubSocketClient } from '../../client';
 
-export interface TestSetup<ApiOptions = never, OptionsRequired extends boolean = true> {
-    application:
-    OptionsRequired extends true
-    ? { api: (options: ApiOptions) => Promise<StorexHubApi_v0> }
-    : { api: (options?: ApiOptions) => Promise<StorexHubApi_v0> }
+export type TestSetup<ApiOptions = never, OptionsRequired extends boolean = true> = OptionsRequired extends true
+    ? { createSession(options: ApiOptions): Promise<TestSession> }
+    : { createSession(options?: ApiOptions): Promise<TestSession> }
+export interface TestSession {
+    api: StorexHubApi_v0
+    close(): Promise<void>
 }
+
 export type MultiApiOptions = { type: 'websocket' | 'http' } & ApplicationApiOptions
 export type TestFactory<ApiOptions = never, OptionsRequired extends boolean = true> = (description: string, test?: (setup: TestSetup<ApiOptions, OptionsRequired>) => void | Promise<void>) => void
 export type TestSuite<ApiOptions = never, OptionsRequired extends boolean = true> = (options: { it: TestFactory<ApiOptions, OptionsRequired> }) => void
@@ -39,7 +41,15 @@ function createTestApplication() {
 function createApiTestFactory() {
     const factory: TestFactory<ApplicationApiOptions, false> = (description, test?) => {
         it(description, test && (async () => {
-            await test({ application: createTestApplication() })
+            const application = createTestApplication()
+            await test({
+                createSession: async () => {
+                    return {
+                        api: await application.api(),
+                        close: async () => { }
+                    }
+                }
+            })
         }))
     }
     return factory
@@ -53,9 +63,12 @@ function createHttpTestFactory() {
                 secretKey: 'bla'
             })
             await test({
-                application: {
-                    api: async () => {
-                        return createSupertestApi(server.app)
+                createSession: async () => {
+                    return {
+                        api: await createSupertestApi(server.app),
+                        async close() {
+
+                        }
                     }
                 }
             })
@@ -92,13 +105,16 @@ function createWebsocketTestFactory() {
             const sockets: SocketIOClient.Socket[] = []
             try {
                 await test({
-                    application: {
-                        api: async () => {
-                            const socket = io('http://localhost:3000', { forceNew: true })
-                            sockets.push(socket)
+                    createSession: async () => {
+                        const socket = io('http://localhost:3000', { forceNew: true })
+                        sockets.push(socket)
 
-                            const client = createStorexHubSocketClient(socket)
-                            return client
+                        const client = await createStorexHubSocketClient(socket)
+                        return {
+                            api: client,
+                            async close() {
+                                socket.close()
+                            }
                         }
                     }
                 })
@@ -125,19 +141,27 @@ function createMultiApiTestFactory() {
             const sockets: SocketIOClient.Socket[] = []
             try {
                 await test({
-                    application: {
-                        api: async (options) => {
-                            if (options.type === 'http') {
-                                return createSupertestApi(server.app)
-                            } else if (options.type === 'websocket') {
-                                const socket = io('http://localhost:3000', { forceNew: true })
-                                sockets.push(socket)
+                    createSession: async (options) => {
+                        if (options.type === 'http') {
+                            return {
+                                api: await createSupertestApi(server.app),
+                                async close() {
 
-                                const client = createStorexHubSocketClient(socket, options)
-                                return client
-                            } else {
-                                throw new Error(`Cannot create API of unknown type: ${options.type}`)
+                                }
                             }
+                        } else if (options.type === 'websocket') {
+                            const socket = io('http://localhost:3000', { forceNew: true })
+                            sockets.push(socket)
+
+                            const client = await createStorexHubSocketClient(socket, options)
+                            return {
+                                api: client,
+                                async close() {
+                                    socket.close()
+                                }
+                            }
+                        } else {
+                            throw new Error(`Cannot create API of unknown type: ${options.type}`)
                         }
                     }
                 })

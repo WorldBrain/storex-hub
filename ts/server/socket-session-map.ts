@@ -1,7 +1,10 @@
 export class SocketSessionMap<Session> {
     public sessions: { [id: string]: Promise<Session> } = {}
 
-    constructor(private options: { createSession: (client: SocketIO.Socket) => Promise<Session> }) {
+    constructor(private options: {
+        createSession(client: SocketIO.Socket): Promise<Session>
+        destroySession(session: Session): Promise<void>
+    }) {
     }
 
     setup(io: SocketIO.Server) {

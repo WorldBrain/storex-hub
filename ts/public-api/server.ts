@@ -1,17 +1,19 @@
 import { AppSchema } from '../types/apps';
-import { RemoteSubscriptionRequest_v0, SentStorageChangeEvent_v0 } from './common';
+import * as common from './common';
 
 export interface StorexHubApi_v0 {
     registerApp(options: RegisterAppOptions_v0): Promise<RegisterAppResult_v0>
     identifyApp(options: IdentifyAppOptions_v0): Promise<IdentifyAppResult_v0>
     getSessionInfo(): Promise<GetSessionInfoResult_v0>
     // unidentifyApp() : Promise<void>
+    destroySession(): Promise<void>
 
     executeOperation(options: { operation: any[] }): Promise<{ result: any }>
 
     executeRemoteOperation(options: ExecuteRemoteOperationOptions_v0): Promise<ExecuteRemoteOperationResult_v0>
-    subscribeToRemoveEvent(options: SubscribeToRemoveEventOptions_v0): Promise<SubscribeToRemoveEventResult_v0>
-    unsubscribeFromRemoveEvent(options: UnsubscribeFromRemoveEventOptions_v0): Promise<UnsubscribeFromRemoveEventResult_v0>
+
+    subscribeToEvent(options: SubscribeToEventOptions_v0): Promise<SubscribeToEventResult_v0>
+    unsubscribeFromEvent(options: UnsubscribeFromEventOptions_v0): Promise<UnsubscribeFromEventResult_v0>
     emitEvent(options: EmitEventOptions_v0): Promise<EmitEventResult_v0>
 
     // requestPriviliges(options : {  }) : Promise<{}>
@@ -73,25 +75,32 @@ export type ExecuteRemoteOperationResult_v0 =
     { status: 'app-not-supported' } |
     { status: 'success', result: any }
 
-export interface SubscribeToRemoveEventOptions_v0 {
-    request: RemoteSubscriptionRequest_v0
+export interface SubscribeToEventOptions_v0 {
+    request: SubscriptionRequest_v0
 }
-export type SubscribeToRemoveEventResult_v0 =
+export type SubscriptionRequest_v0 =
+    common.AppAvailabilityChangedSubscriptionRequest_v0 |
+    ({ app: string } & common.RemoteSubscriptionRequest_v0)
+
+
+
+export type SubscribeToEventResult_v0 =
+    { status: 'unsupported-event' } |
     { status: 'app-not-found' } |
     { status: 'app-not-supported' } |
     { status: 'success', subscriptionId: string }
 
-export interface UnsubscribeFromRemoveEventOptions_v0 {
+export interface UnsubscribeFromEventOptions_v0 {
     subscriptionId: string
 }
-export type UnsubscribeFromRemoveEventResult_v0 = void
+export type UnsubscribeFromEventResult_v0 = void
 
 export interface EmitEventOptions_v0 {
     event: EmittableEvent_v0
 }
 export type EmitEventResult_v0 = void
 
-export type EmittableEvent_v0 = SentStorageChangeEvent_v0
+export type EmittableEvent_v0 = common.SentStorageChangeEvent_v0
 
 export interface UpdateSchemaOptions_v0 {
     schema: AppSchema
@@ -120,6 +129,9 @@ export const STOREX_HUB_API_v0: { [MethodName in keyof StorexHubApi_v0]: MethodD
     getSessionInfo: {
         path: '/session',
     },
+    destroySession: {
+        path: '/session/destroy',
+    },
     executeOperation: {
         path: '/storage/operation',
     },
@@ -129,10 +141,10 @@ export const STOREX_HUB_API_v0: { [MethodName in keyof StorexHubApi_v0]: MethodD
     executeRemoteOperation: {
         path: '/remote/operation'
     },
-    subscribeToRemoveEvent: {
+    subscribeToEvent: {
         path: '/remote/event/subscribe'
     },
-    unsubscribeFromRemoveEvent: {
+    unsubscribeFromEvent: {
         path: '/remote/event/unsubscribe'
     },
     emitEvent: {

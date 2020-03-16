@@ -4,11 +4,11 @@ import { UpdateSchemaError_v0 } from '../../public-api';
 import { TEST_COLLECTION_DEFINITIONS } from './data';
 
 export default createApiTestSuite('Collection registration and data operations', ({ it }) => {
-    it('should be able to register collections and execute data operations', async ({ application }) => {
-        const api = await application.api()
-        await api.registerApp({ name: 'contacts', identify: true })
+    it('should be able to register collections and execute data operations', async ({ createSession }) => {
+        const { api: app } = await createSession()
+        await app.registerApp({ name: 'contacts', identify: true })
 
-        const updateSchemaResult = await api.updateSchema({
+        const updateSchemaResult = await app.updateSchema({
             schema: {
                 collectionDefinitions: {
                     'contacts:user': TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })
@@ -19,7 +19,7 @@ export default createApiTestSuite('Collection registration and data operations',
             success: true,
         })
 
-        const { result: createResult } = await api.executeOperation({
+        const { result: createResult } = await app.executeOperation({
             operation: ['createObject', 'contacts:user', {
                 email: 'john@doe.com',
             }]
@@ -31,19 +31,19 @@ export default createApiTestSuite('Collection registration and data operations',
             }
         })
 
-        const { result: fieldResult } = await api.executeOperation({ operation: ['findObjects', 'contacts:user', {}] })
+        const { result: fieldResult } = await app.executeOperation({ operation: ['findObjects', 'contacts:user', {}] })
         expect(fieldResult).toEqual([{
             id: createResult.object.id,
             email: 'john@doe.com',
         }])
     })
 
-    it('should not allow the creation of collections with invalid names', async ({ application }) => {
-        const api = await application.api()
-        await api.registerApp({ name: 'contacts', identify: true })
+    it('should not allow the creation of collections with invalid names', async ({ createSession }) => {
+        const { api: app } = await createSession()
+        await app.registerApp({ name: 'contacts', identify: true })
 
         const tryUpdate = async (name: string) => {
-            const result = await api.updateSchema({
+            const result = await app.updateSchema({
                 schema: {
                     collectionDefinitions: {
                         [name]: TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })
@@ -61,11 +61,11 @@ export default createApiTestSuite('Collection registration and data operations',
         await tryUpdate('u!')
     })
 
-    it('should not allow the creation of collections without namespaces', async ({ application }) => {
-        const api = await application.api()
-        await api.registerApp({ name: 'contacts', identify: true })
+    it('should not allow the creation of collections without namespaces', async ({ createSession }) => {
+        const { api: app } = await createSession()
+        await app.registerApp({ name: 'contacts', identify: true })
 
-        const result = await api.updateSchema({
+        const result = await app.updateSchema({
             schema: {
                 collectionDefinitions: {
                     'user': TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })
@@ -79,11 +79,11 @@ export default createApiTestSuite('Collection registration and data operations',
         })
     })
 
-    it('should not allow the creation of collections in other namespaces', async ({ application }) => {
-        const api = await application.api()
-        await api.registerApp({ name: 'contacts', identify: true })
+    it('should not allow the creation of collections in other namespaces', async ({ createSession }) => {
+        const { api: app } = await createSession()
+        await app.registerApp({ name: 'contacts', identify: true })
 
-        const result = await api.updateSchema({
+        const result = await app.updateSchema({
             schema: {
                 collectionDefinitions: {
                     'calendar:user': TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })

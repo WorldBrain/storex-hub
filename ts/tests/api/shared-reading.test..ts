@@ -4,8 +4,8 @@ import { createApiTestSuite } from "./index.tests";
 export default createApiTestSuite('Read access to virtual tables', ({ it }) => {
     if (1) return
 
-    it('should allow different applications to register collections for read acces', async function ({ application }) {
-        const contactsApi = await application.api()
+    it('should allow different applications to register collections for read acces', async function ({ createSession }) {
+        const { api: contactsApi } = await createSession()
         await contactsApi.registerApp({ name: 'superContacts', identify: true })
 
         const terms = {
@@ -41,7 +41,7 @@ export default createApiTestSuite('Read access to virtual tables', ({ it }) => {
             }
         })
 
-        const crmApi = await application.api()
+        const { api: crmApi } = await createSession()
         await crmApi.registerApp({ name: 'superCrm', identify: true })
         await crmApi.updateSchema({
             schema: {

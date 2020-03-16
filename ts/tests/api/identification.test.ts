@@ -12,50 +12,50 @@ const ANONYMOUS_SESSION_INFO: apiTypes.GetSessionInfoResult_v0 = {
 }
 
 export default createApiTestSuite('Application registration and identification', ({ it }) => {
-    it('should be able to register a new app', async ({ application }) => {
-        const api = await application.api()
-        const result = await api.registerApp({ name: 'contacts' })
+    it('should be able to register a new app', async ({ createSession }) => {
+        const { api: app } = await createSession()
+        const result = await app.registerApp({ name: 'contacts' })
         expect(result).toEqual({ success: true, accessToken: 'token-1' })
-        expect(await api.getSessionInfo()).toEqual(ANONYMOUS_SESSION_INFO)
+        expect(await app.getSessionInfo()).toEqual(ANONYMOUS_SESSION_INFO)
     })
 
-    it('should be able to register a new app and identify automatically', async ({ application }) => {
-        const api = await application.api()
-        const result = await api.registerApp({ name: 'contacts', identify: true })
+    it('should be able to register a new app and identify automatically', async ({ createSession }) => {
+        const { api: app } = await createSession()
+        const result = await app.registerApp({ name: 'contacts', identify: true })
         expect(result).toEqual({ success: true, accessToken: 'token-1' })
-        expect(await api.getSessionInfo()).toEqual(IDENTIFIED_SESSION_INFO)
+        expect(await app.getSessionInfo()).toEqual(IDENTIFIED_SESSION_INFO)
     })
 
-    it('should not register an already existing app', async ({ application }) => {
-        const api = await application.api();
-        await api.registerApp({ name: 'contacts' })
+    it('should not register an already existing app', async ({ createSession }) => {
+        const { api: app } = await createSession()
+        await app.registerApp({ name: 'contacts' })
 
-        const result = await (await application.api()).registerApp({ name: 'contacts' })
+        const result = await ((await createSession()).api).registerApp({ name: 'contacts' })
         expect(result).toEqual({
             success: false,
             errorCode: apiTypes.RegisterAppError_v0.APP_ALREADY_EXISTS,
             errorText: 'App already exists', // TODO: Tricky security issue, since this leaks info about installed apps
         })
-        expect(await api.getSessionInfo()).toEqual(ANONYMOUS_SESSION_INFO)
+        expect(await app.getSessionInfo()).toEqual(ANONYMOUS_SESSION_INFO)
     })
 
-    it('should be able to identify an app with an access key', async ({ application }) => {
-        const api = await application.api()
-        const registrationResult = await api.registerApp({ name: 'contacts' })
+    it('should be able to identify an app with an access key', async ({ createSession }) => {
+        const { api: app } = await createSession()
+        const registrationResult = await app.registerApp({ name: 'contacts' })
 
-        const identificationResult = await api.identifyApp({
+        const identificationResult = await app.identifyApp({
             name: 'contacts',
             accessToken: (registrationResult as { accessToken: string }).accessToken
         })
         expect(identificationResult).toEqual({ success: true })
-        expect(await api.getSessionInfo()).toEqual(IDENTIFIED_SESSION_INFO)
+        expect(await app.getSessionInfo()).toEqual(IDENTIFIED_SESSION_INFO)
     })
 
-    it('should not allow identifying an app with an incorrect access key', async ({ application }) => {
-        const api = await application.api()
-        const registrationResult = await api.registerApp({ name: 'contacts' })
+    it('should not allow identifying an app with an incorrect access key', async ({ createSession }) => {
+        const { api: app } = await createSession()
+        await app.registerApp({ name: 'contacts' })
 
-        const identificationResult = await api.identifyApp({
+        const identificationResult = await app.identifyApp({
             name: 'contacts',
             accessToken: 'totally wrong key'
         })
@@ -63,10 +63,10 @@ export default createApiTestSuite('Application registration and identification',
             success: false, errorCode: apiTypes.IdentifyAppError_v0.INVALID_ACCESS_TOKEN,
             errorText: `Invalid access token`,
         })
-        expect(await api.getSessionInfo()).toEqual(ANONYMOUS_SESSION_INFO)
+        expect(await app.getSessionInfo()).toEqual(ANONYMOUS_SESSION_INFO)
     })
 
-    it('should not allow two sessions for one app at the same time (do we want this?)'/* , async ({ application }) => {
+    it('should not allow two sessions for one app at the same time (do we want this?)'/* , async ({ api }) => {
         const api1 = await application.api()
         const registrationResult = await api1.registerApp({ name: 'contacts' })
         
@@ -82,19 +82,19 @@ export default createApiTestSuite('Application registration and identification',
         expect(identificationResult2).toEqual({ success: false, errorCode: IdentifyAppError_v0.DUPLICATE_IDENTFICATION })
     } */)
 
-    it('should not leak information about active sessions to identifications with wrong key', async ({ application }) => {
-        const api1 = await application.api()
-        const registrationResult = await api1.registerApp({ name: 'contacts' })
+    it('should not leak information about active sessions to identifications with wrong key', async ({ createSession }) => {
+        const { api: app1 } = await createSession()
+        const registrationResult = await app1.registerApp({ name: 'contacts' })
 
-        const identificationResult1 = await api1.identifyApp({
+        const identificationResult1 = await app1.identifyApp({
             name: 'contacts',
             accessToken: (registrationResult as { accessToken: string }).accessToken
         })
         expect(identificationResult1).toEqual({ success: true })
-        expect(await api1.getSessionInfo()).toEqual(IDENTIFIED_SESSION_INFO)
+        expect(await app1.getSessionInfo()).toEqual(IDENTIFIED_SESSION_INFO)
 
-        const api2 = await application.api()
-        const identificationResult2 = await api2.identifyApp({
+        const { api: app2 } = await createSession()
+        const identificationResult2 = await app2.identifyApp({
             name: 'contacts',
             accessToken: 'wrong key'
         })
@@ -102,6 +102,6 @@ export default createApiTestSuite('Application registration and identification',
             success: false, errorCode: apiTypes.IdentifyAppError_v0.INVALID_ACCESS_TOKEN,
             errorText: `Invalid access token`,
         })
-        expect(await api2.getSessionInfo()).toEqual(ANONYMOUS_SESSION_INFO)
+        expect(await app2.getSessionInfo()).toEqual(ANONYMOUS_SESSION_INFO)
     })
 })

@@ -14,3 +14,12 @@ export type SentStorageChangeEvent_v0 = StorageChangeEventBase_v0
 export interface ReceivedStorageChangeEvent_v0 extends StorageChangeEventBase_v0 {
     app: string
 }
+
+export interface AppAvailabilityChangedSubscriptionRequest_v0 {
+    type: 'app-availability-changed'
+}
+export interface AppAvailabilityChangedEvent_v0 {
+    type: 'app-availability-changed'
+    app: string
+    availability: boolean
+}

@@ -9,9 +9,9 @@ import * as api from "../../public-api";
 import { ClientEvent } from '../../public-api';
 
 export default createMultiApiTestSuite('Remote apps', ({ it }) => {
-    it('should be able to proxy operations into a remote app', async ({ application }) => {
+    it('should be able to proxy operations into a remote app', async ({ createSession: api }) => {
         const operations: any[] = []
-        const memex = await application.api({
+        const { api: memex } = await api({
             type: 'websocket',
             callbacks: {
                 handleRemoteOperation: async (options) => {
@@ -22,8 +22,8 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         })
         await memex.registerApp({ name: 'memex', identify: true, remote: true })
 
-        const backupApp = await application.api({ type: 'http' })
-        await backupApp.registerApp({ name: 'backup' })
+        const { api: backupApp } = await api({ type: 'http' })
+        await backupApp.registerApp({ name: 'backup', identify: true })
         const response = await backupApp.executeRemoteOperation({
             app: 'memex',
             operation: ['findObjects', 'pages', { url: 'foo.com/bar' }]
@@ -39,7 +39,7 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         })
     })
 
-    async function setupChangeEventTest(application: TestSetup<MultiApiOptions, true>['application']) {
+    async function setupChangeEventTest(createSession: TestSetup<MultiApiOptions, true>['createSession']) {
         const collectionsToWatch = new Set<string>()
 
         const backend = new DexieStorageBackend({ dbName: 'memex', idbImplementation: inMemory() })
@@ -59,7 +59,7 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
 
         let subscriptionCount = 0
         let memexSubscriptions: { [id: string]: api.RemoteStorageChangeSubscriptionRequest_v0 } = {}
-        const memex = await application.api({
+        const { api: memex } = await createSession({
             type: 'websocket',
             callbacks: {
                 handleSubscription: async ({ request }) => {
@@ -93,7 +93,7 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         ])
 
         const events: api.ClientEvent[] = []
-        const backupApp = await application.api({
+        const { api: backupApp } = await createSession({
             type: 'websocket',
             callbacks: {
                 handleEvent: async (options) => {
@@ -101,8 +101,9 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
                 }
             }
         })
-        await backupApp.registerApp({ name: 'backup' })
-        const subscriptionResult = await backupApp.subscribeToRemoveEvent({
+        await backupApp.registerApp({ name: 'backup', identify: true })
+
+        const subscriptionResult = await backupApp.subscribeToEvent({
             request: {
                 type: 'storage-change',
                 app: 'memex',
@@ -124,8 +125,8 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         return { memexStorageManager, memexSubscriptions, events, subscriptionResult, backupApp }
     }
 
-    it('should be able to let remote apps signal changes to their local storage', async ({ application }) => {
-        const { memexStorageManager, events } = await setupChangeEventTest(application)
+    it('should be able to let remote apps signal changes to their local storage', async ({ createSession }) => {
+        const { memexStorageManager, events } = await setupChangeEventTest(createSession)
 
         await memexStorageManager.collection('tags').createObject({
             url: 'foo.com/test',
@@ -151,15 +152,15 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         expect(events).toEqual(expectedEvents)
     })
 
-    it('should be able to let remote apps signal changes to their local storage and unsubscribe from events', async ({ application }) => {
-        const { memexStorageManager, memexSubscriptions, events, backupApp, subscriptionResult } = await setupChangeEventTest(application)
+    it('should be able to let remote apps signal changes to their local storage and unsubscribe from events', async ({ createSession }) => {
+        const { memexStorageManager, memexSubscriptions, events, backupApp, subscriptionResult } = await setupChangeEventTest(createSession)
 
         await memexStorageManager.collection('tags').createObject({
             url: 'foo.com/test',
             name: 'bla'
         })
 
-        await backupApp.unsubscribeFromRemoveEvent({ subscriptionId: subscriptionResult.subscriptionId })
+        await backupApp.unsubscribeFromEvent({ subscriptionId: subscriptionResult.subscriptionId })
         expect(memexSubscriptions).toEqual({})
 
         await memexStorageManager.collection('tags').createObject({
@@ -182,6 +183,36 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
                     ],
                 },
             }
+        ])
+    })
+
+    it('should be able to detect when a remote app becomes available and goes down', async ({ createSession }) => {
+        const receivedEvents: ClientEvent[] = []
+        const { api: backupApp } = await createSession({
+            type: 'websocket',
+            callbacks: {
+                async handleEvent({ event }) {
+                    receivedEvents.push(event)
+                }
+            }
+        })
+        await backupApp.registerApp({ name: 'backup', identify: true })
+        await backupApp.subscribeToEvent({
+            request: { type: 'app-availability-changed' }
+        })
+
+        const { api: memexApp, close: closeMemex } = await createSession({ type: 'websocket', })
+        await memexApp.registerApp({ name: 'memex', identify: true, remote: true })
+
+        expect(receivedEvents).toEqual([
+            { type: 'app-availability-changed', app: 'memex', availability: true }
+        ])
+        receivedEvents.splice(0)
+
+        await memexApp.destroySession()
+
+        expect(receivedEvents).toEqual([
+            { type: 'app-availability-changed', app: 'memex', availability: false }
         ])
     })
 })

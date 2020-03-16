@@ -157,7 +157,7 @@ export async function main(options?: {
         name: 'memex-gist-sharer',
         identify: true,
     })
-    const subscriptionResult = await client.subscribeToRemoveEvent({
+    const subscriptionResult = await client.subscribeToEvent({
         request: {
             type: 'storage-change',
             app: 'memex',

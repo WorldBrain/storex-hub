@@ -1,12 +1,14 @@
 import uuid from 'uuid/v4'
+import TypedEmitter from 'typed-emitter'
 import { StorageBackend } from "@worldbrain/storex";
-import { StorexHubApi_v0, StorexHubCallbacks_v0, ClientEvent } from "./public-api";
+import { StorexHubApi_v0, StorexHubCallbacks_v0, ClientEvent, RemoteSubscriptionRequest_v0, SubscribeToEventResult_v0 } from "./public-api";
 import { Session, SessionEvents } from "./session";
 import { AccessTokenManager } from "./access-tokens";
 import { Storage } from "./storage/types";
 import { createStorage } from "./storage";
 import { SingleArgumentOf } from "./types/utils";
 import { EventEmitter } from "events";
+import { isRemoteSubscriptionRequest } from './public-api/utils';
 
 export interface ApplicationOptions {
     accessTokenManager: AccessTokenManager
@@ -20,6 +22,9 @@ export class Application {
     private storage: Promise<Storage>
     private remoteSessions: { [identifier: string]: StorexHubCallbacks_v0 } = {}
     private appEvents: { [identifier: string]: EventEmitter } = {}
+    private events = new EventEmitter() as TypedEmitter<{
+        'app-availability-changed': (event: { app: string, availability: boolean }) => void
+    }>
 
     constructor(private options: ApplicationOptions) {
         this.storage = createStorage({ createBackend: options.createStorageBackend })
@@ -31,6 +36,11 @@ export class Application {
 
     async api(options?: ApplicationApiOptions): Promise<StorexHubApi_v0> {
         const subscriptions: { [subscriptionId: string]: { unsubscribe: () => Promise<void> } } = {}
+        const registerSubscription = (unsubscribe: () => Promise<void>) => {
+            const subscriptionId = uuid()
+            subscriptions[subscriptionId] = { unsubscribe }
+            return subscriptionId
+        }
 
         const session = new Session({
             accessTokenManager: this.options.accessTokenManager,
@@ -55,30 +65,33 @@ export class Application {
                 return { status: 'success', result }
             },
             subscribeToEvent: async ({ request }) => {
-                const remoteSession = this.remoteSessions[request.app]
-                const appEvents = this.appEvents[request.app]
-                if (!remoteSession || !appEvents) {
-                    return { status: 'app-not-found' }
+                if (isRemoteSubscriptionRequest(request)) {
+                    return subsribeToRemoteEvent(request, {
+                        getRemoteSession: app => this.remoteSessions[app],
+                        getAppEvents: app => this.appEvents[app],
+                        handleEvent: async ({ event }) => options?.callbacks?.handleEvent?.({ event }),
+                        registerSubscription
+                    })
                 }
 
-                const subscriptionResult = await remoteSession.handleSubscription?.({ request })
-                if (!subscriptionResult) {
-                    return { status: 'app-not-supported' }
-                }
-
-                const handler = (event: ClientEvent) => {
-                    options?.callbacks?.handleEvent?.({ event })
-                }
-                appEvents.addListener(request.type, handler)
-
-                const subscriptionId = uuid()
-                subscriptions[subscriptionId] = {
-                    async unsubscribe() {
-                        appEvents.removeListener(request.type, handler)
-                        await remoteSession.handleUnsubscription?.({ subscriptionId: subscriptionResult.subscriptionId })
+                if (request.type === 'app-availability-changed') {
+                    const handler = (event: { app: string, availability: boolean }) => {
+                        options?.callbacks?.handleEvent?.({
+                            event: {
+                                type: 'app-availability-changed',
+                                ...event,
+                            }
+                        })
                     }
+
+                    this.events.addListener('app-availability-changed', handler)
+                    const subscriptionId = registerSubscription(async () => {
+                        this.events.removeListener('app-availability-changed', handler)
+                    })
+                    return { status: 'success', subscriptionId }
                 }
-                return { status: 'success', subscriptionId }
+
+                return { status: 'unsupported-event' }
             },
             unsubscribeFromEvent: async ({ subscriptionId }) => {
                 const subscription = subscriptions[subscriptionId]
@@ -104,8 +117,13 @@ export class Application {
                     app: session.identifiedApp.identifier
                 })
             },
-            destroy: async () => {
-
+            destroySession: async () => {
+                if (session.identifiedApp) {
+                    this.events.emit('app-availability-changed', {
+                        app: session.identifiedApp.identifier,
+                        availability: false,
+                    })
+                }
             }
         })
         session.events.once('appIdentified', (event: SingleArgumentOf<SessionEvents['appIdentified']>) => {
@@ -113,7 +131,41 @@ export class Application {
                 this.remoteSessions[event.identifier] = options.callbacks
                 this.appEvents[event.identifier] = new EventEmitter()
             }
+            this.events.emit('app-availability-changed', {
+                app: event.identifier,
+                availability: true,
+            })
         })
         return session
     }
+}
+
+export async function subsribeToRemoteEvent(request: RemoteSubscriptionRequest_v0, options: {
+    handleEvent: StorexHubCallbacks_v0['handleEvent']
+    getRemoteSession: (appIdentifier: string) => StorexHubCallbacks_v0 | null
+    getAppEvents: (appIdentifier: string) => EventEmitter | null
+    registerSubscription: (unsubscribe: () => Promise<void>) => string
+}): Promise<SubscribeToEventResult_v0> {
+    const remoteSession = options.getRemoteSession(request.app)
+    const appEvents = options.getAppEvents(request.app)
+    if (!remoteSession || !appEvents) {
+        return { status: 'app-not-found' }
+    }
+
+    const subscriptionResult = await remoteSession.handleSubscription?.({ request })
+    if (!subscriptionResult) {
+        return { status: 'app-not-supported' }
+    }
+
+    const handler = (event: ClientEvent) => {
+        options.handleEvent?.({ event })
+    }
+    appEvents.addListener(request.type, handler)
+
+    const unsubscribe = async () => {
+        appEvents.removeListener(request.type, handler)
+        await remoteSession.handleUnsubscription?.({ subscriptionId: subscriptionResult.subscriptionId })
+    }
+    const subscriptionId = await options.registerSubscription(unsubscribe)
+    return { status: 'success', subscriptionId }
 }

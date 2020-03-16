@@ -7,6 +7,7 @@ import { Application } from "../application";
 import { STOREX_HUB_API_v0, StorexHubApi_v0, StorexHubCallbacks_v0 } from '../public-api';
 import { Server } from 'http'
 import { SocketSessionMap } from './socket-session-map'
+import { Session } from '../session'
 
 export async function createHttpServer(application: Application, options: {
     secretKey: string
@@ -64,7 +65,7 @@ export async function createHttpServer(application: Application, options: {
 
 function setupWebsocketServer(io: SocketIO.Server, application: Application) {
     let requestsSent = 0
-    const sessions = new SocketSessionMap({
+    const sessions = new SocketSessionMap<StorexHubApi_v0>({
         createSession: (socket) => application.api({
             callbacks: new Proxy({}, {
                 get: <MethodName extends keyof StorexHubCallbacks_v0>(_: unknown, key: MethodName) => {
@@ -89,7 +90,8 @@ function setupWebsocketServer(io: SocketIO.Server, application: Application) {
                     }
                 }
             }) as StorexHubCallbacks_v0
-        })
+        }),
+        destroySession: session => session.destroySession()
     })
     sessions.setup(io)
 

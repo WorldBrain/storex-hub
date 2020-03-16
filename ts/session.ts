@@ -14,11 +14,11 @@ export interface SessionOptions {
         (appIdentifier: string, methodName: string, methodOptions: any)
             => Promise<api.ExecuteRemoteOperationResult_v0>
     )
-    subscribeToEvent: (options: api.SubscribeToRemoveEventOptions_v0) => Promise<api.SubscribeToRemoveEventResult_v0>
-    unsubscribeFromEvent: (options: api.UnsubscribeFromRemoveEventOptions_v0) => Promise<api.UnsubscribeFromRemoveEventResult_v0>
+    subscribeToEvent: (options: api.SubscribeToEventOptions_v0) => Promise<api.SubscribeToEventResult_v0>
+    unsubscribeFromEvent: (options: api.UnsubscribeFromEventOptions_v0) => Promise<api.UnsubscribeFromEventResult_v0>
     emitEvent: (options: api.EmitEventOptions_v0) => Promise<api.EmitEventResult_v0>
 
-    destroy: () => Promise<void>
+    destroySession: () => Promise<void>
 
     // executeCallback: (
     //     <MethodName extends keyof StorexHubCallbacks_v0>
@@ -37,6 +37,7 @@ interface IdentifiedApp {
 export class Session implements api.StorexHubApi_v0 {
     events: TypedEmitter<SessionEvents> = new EventEmitter() as TypedEmitter<SessionEvents>
     identifiedApp?: IdentifiedApp
+    destroyed = false
 
     constructor(private options: SessionOptions) {
     }
@@ -113,11 +114,11 @@ export class Session implements api.StorexHubApi_v0 {
         })
     }
 
-    async subscribeToRemoveEvent(options: api.SubscribeToRemoveEventOptions_v0): Promise<api.SubscribeToRemoveEventResult_v0> {
+    async subscribeToEvent(options: api.SubscribeToEventOptions_v0): Promise<api.SubscribeToEventResult_v0> {
         return this.options.subscribeToEvent(options)
     }
 
-    async unsubscribeFromRemoveEvent(options: api.UnsubscribeFromRemoveEventOptions_v0): Promise<api.UnsubscribeFromRemoveEventResult_v0> {
+    async unsubscribeFromEvent(options: api.UnsubscribeFromEventOptions_v0): Promise<api.UnsubscribeFromEventResult_v0> {
         return this.options.unsubscribeFromEvent(options)
     }
 
@@ -125,8 +126,11 @@ export class Session implements api.StorexHubApi_v0 {
         return this.options.emitEvent(options)
     }
 
-    async destroy() {
-        await this.options.destroy()
+    async destroySession() {
+        if (!this.destroyed) {
+            await this.options.destroySession()
+            this.destroyed = true
+        }
     }
 }
 
