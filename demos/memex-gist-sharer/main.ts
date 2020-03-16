@@ -49,7 +49,7 @@ export async function fetchStorageData(options: {
     if (tagsResponse.status !== 'success') {
         throw new Error(`Error while fetching URLs for tag '${SHARE_TAG_NAME}'`)
     }
-    const pageUrls = (tagsResponse.result.result as Array<{ url: string }>).map(tag => tag.url)
+    const pageUrls = (tagsResponse.result as Array<{ url: string }>).map(tag => tag.url)
 
     const pageTagsResponse = await options.client.executeRemoteOperation({
         app: 'memex',
@@ -68,12 +68,12 @@ export async function fetchStorageData(options: {
     }
 
     const tagsByPage: TagsByPage = {}
-    for (const tag of pageTagsResponse.result.result) {
+    for (const tag of pageTagsResponse.result) {
         tagsByPage[tag.url] = tagsByPage[tag.url] || []
         tagsByPage[tag.url].push(tag.name)
     }
 
-    return { tagsByPage, pages: pagesRespone.result.result }
+    return { tagsByPage, pages: pagesRespone.result }
 }
 
 export function renderGist(data: StorageData) {

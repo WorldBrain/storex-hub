@@ -109,9 +109,16 @@ export class Session implements api.StorexHubApi_v0 {
     }
 
     async executeRemoteOperation(options: api.ExecuteRemoteOperationOptions_v0): Promise<api.ExecuteRemoteOperationResult_v0> {
-        return this.options.executeCallback(options.app, 'handleRemoteOperation', {
+        const response = await this.options.executeCallback(options.app, 'handleRemoteOperation', {
             operation: options.operation,
         })
+        if (response.status === 'success') {
+            return {
+                status: 'success',
+                result: response.result.result
+            }
+        }
+        return response
     }
 
     async subscribeToEvent(options: api.SubscribeToEventOptions_v0): Promise<api.SubscribeToEventResult_v0> {
