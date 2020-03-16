@@ -4,9 +4,9 @@ import { AppStorage } from "./modules/apps";
 import { registerModuleMapCollections } from "@worldbrain/storex-pattern-modules";
 import { AppSchema } from "../types/apps";
 
-export async function createStorage(options : { createBackend : () => StorageBackend, appSchemas? : Array<AppSchema> }) : Promise<Storage> {
+export async function createStorage(options: { createBackend: () => StorageBackend, appSchemas?: Array<AppSchema> }): Promise<Storage> {
     const storageManager = new StorageManager({ backend: options.createBackend() })
-    const systemModules : StandardStorageModules = {
+    const systemModules: StandardStorageModules = {
         apps: new AppStorage({ storageManager })
     }
 
@@ -18,8 +18,9 @@ export async function createStorage(options : { createBackend : () => StorageBac
     }
 
     await storageManager.finishInitialization()
+    await storageManager.backend.migrate()
 
-    const storage : Storage = {
+    const storage: Storage = {
         manager: storageManager,
         systemModules,
     }
