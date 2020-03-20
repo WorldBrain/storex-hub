@@ -17,5 +17,6 @@
     "typeRoots": ["./node_modules/@types"],
     "outDir": "lib"
   },
-  "filesGlob": ["./ts/**/*.ts", "!./node_modules/**/*.ts"]
+  "include": ["ts/**/*.ts"],
+  "exclude": ["node_modules"]
 }
