@@ -1,3 +1,4 @@
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import some from 'lodash/some'
 import mapKeys from 'lodash/mapKeys'
 import io from 'socket.io-client'
@@ -23,6 +24,7 @@ interface StorageData {
     tagsByPage: TagsByPage
 }
 
+const APP_NAME = 'memex-gist-sharer'
 const SHARE_TAG_NAME = 'share-gist'
 const SPECIAL_GIST_FILENAME = 'my_memex.md'
 
@@ -127,36 +129,46 @@ async function getSpecialGistId(gistClient: any) {
     return gists.length ? gists[0].id : null
 }
 
-export async function main(options?: {
-    port?: number
-}) {
-    const githubToken = process.env.GITHUB_TOKEN
-    if (!githubToken) {
-        console.error(`Didn't get a GITHUB_TOKEN`)
-        return
+function requireEnvVar(key: string) {
+    const value = process.env[key]
+    if (!value) {
+        console.error(`Didn't get a ${key}`)
+        process.exit(1)
+    }
+    return value
+}
+
+export async function registerOrIdentify(client: StorexHubApi_v0, options: { configPath: string }) {
+    console.log(`Identifying with Storex Hub as '${APP_NAME}'`)
+
+    const hasConfig = existsSync(options.configPath)
+    const existingConfig = hasConfig ? JSON.parse(readFileSync(options.configPath).toString()) : null
+    if (existingConfig && existingConfig['accessToken']) {
+        const identificationResult = await client.identifyApp({
+            name: APP_NAME,
+            accessToken: existingConfig['accessToken']
+        })
+        if (!identificationResult.success) {
+            throw new Error(`Couldn't identify app '${APP_NAME}': ${identificationResult.errorCode}`)
+        }
+    } else {
+        const registrationResult = await client.registerApp({
+            name: APP_NAME,
+            identify: true,
+        })
+        if (registrationResult.success) {
+            writeFileSync(options.configPath, JSON.stringify({
+                accessToken: registrationResult.accessToken
+            }))
+        } else {
+            throw new Error(`Couldn't register app '${APP_NAME}'": ${registrationResult.errorCode}`)
+        }
     }
 
-    const socket = io(`http://localhost:${options?.port || 3000}`)
-    const client = await createStorexHubSocketClient(socket, {
-        callbacks: {
-            handleEvent: async ({ event }) => {
-                if (event.type !== 'storage-change' || event.app !== 'memex') {
-                    return
-                }
+    console.log(`Successfuly identified with Storex Hub as '${APP_NAME}'`)
+}
 
-                handleMemexStorageChange(event.info, {
-                    client: client,
-                    settings: {
-                        githubToken,
-                    }
-                })
-            },
-        },
-    })
-    await client.registerApp({
-        name: 'memex-gist-sharer',
-        identify: true,
-    })
+async function tryToSubscribeToMemex(client: StorexHubApi_v0) {
     const subscriptionResult = await client.subscribeToEvent({
         request: {
             type: 'storage-change',
@@ -164,9 +176,60 @@ export async function main(options?: {
             collections: ['tags'],
         }
     })
-    if (subscriptionResult.status !== 'success') {
-        throw new Error('Subscription was not successful: ' + subscriptionResult.status)
+    if (subscriptionResult.status === 'success') {
+        console.log('Successfuly subscribed to Memex storage changes')
+    } else {
+        console.log('Could not subscribe to Memex storage changes (yet?):', subscriptionResult.status)
     }
+}
+
+async function initializeSession(client: StorexHubApi_v0, options: { configPath: string }) {
+    await registerOrIdentify(client, options)
+    await tryToSubscribeToMemex(client)
+    await client.subscribeToEvent({
+        request: {
+            type: 'app-availability-changed'
+        }
+    })
+}
+
+export async function main(options?: {
+    port?: number
+}) {
+    const githubToken = requireEnvVar('GITHUB_TOKEN')
+    const configPath = requireEnvVar('CONFIG_PATH')
+
+    const socket = io(`http://localhost:${options?.port || 3000}`)
+    console.log('Connecting to Storex Hub')
+    const client = await createStorexHubSocketClient(socket, {
+        callbacks: {
+            handleEvent: async ({ event }) => {
+                if (event.type === 'storage-change' && event.app === 'memex') {
+                    handleMemexStorageChange(event.info, {
+                        client: client,
+                        settings: {
+                            githubToken,
+                        }
+                    })
+                } else if (event.type === 'app-availability-changed' && event.app === 'memex') {
+                    console.log('Changed Memex availability:', event.availability ? 'up' : 'down')
+                    if (event.availability) {
+                        tryToSubscribeToMemex(client)
+                    }
+                }
+            },
+        },
+    })
+    console.log('Connected to Storex Hub')
+    await initializeSession(client, { configPath })
+
+    socket.on('reconnect', async () => {
+        console.log('Re-connected to Storex Hub')
+        await initializeSession(client, { configPath })
+    })
+    socket.on('disconnect', async (reason: string) => {
+        console.log('Lost connection to Storex Hub:', reason)
+    })
 
     console.log('Setup complete')
 }

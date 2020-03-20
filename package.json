@@ -23,6 +23,8 @@
     "@worldbrain/storex-backend-typeorm": "^0.1.0",
     "@worldbrain/storex-middleware-change-watcher": "^0.1.0",
     "@worldbrain/storex-pattern-modules": "^0.3.0",
+    "bcrypt": "^4.0.1",
+    "crypto-random-string": "^3.2.0",
     "gist-client": "^1.1.1",
     "koa": "^2.11.0",
     "koa-bodyparser": "^4.2.1",
@@ -36,6 +38,7 @@
     "uuid": "^3.4.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^3.0.0",
     "@types/chai": "^4.0.6",
     "@types/events": "^1.2.0",
     "@types/expect": "^1.20.4",

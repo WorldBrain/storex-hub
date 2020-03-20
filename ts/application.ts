@@ -119,6 +119,11 @@ export class Application {
             },
             destroySession: async () => {
                 if (session.identifiedApp) {
+                    const appEvents = this.appEvents[session.identifiedApp.identifier]
+                    if (appEvents) {
+                        appEvents.removeAllListeners()
+                    }
+
                     this.events.emit('app-availability-changed', {
                         app: session.identifiedApp.identifier,
                         availability: false,
