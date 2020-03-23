@@ -43,26 +43,19 @@ export interface RegisterAppOptions_v0 {
     identify?: boolean
 }
 
-export type RegisterAppResult_v0 = { success: false, errorCode: RegisterAppError_v0, errorText: string } | { success: true, accessToken: string }
-
-export enum RegisterAppError_v0 {
-    APP_ALREADY_EXISTS = 1
-}
+export type RegisterAppResult_v0 = { status: 'success', accessToken: string }
+    | { status: 'app-already-exists' }
 
 export interface IdentifyAppOptions_v0 {
     name: string
     accessToken: string
 }
 
-export type IdentifyAppResult_v0 = { success: true } | { success: false, errorCode: IdentifyAppError_v0, errorText: string }
-
-export enum IdentifyAppError_v0 {
-    INVALID_ACCESS_TOKEN = 1,
-    DUPLICATE_IDENTFICATION = 2
-}
+export type IdentifyAppResult_v0 = { status: 'success' } |
+{ status: 'invalid-access-token' | 'dupliicate-identification' }
 
 export type GetSessionInfoResult_v0 = {
-    success: true,
+    status: 'success',
     appIdentifier?: string
 }
 
@@ -71,9 +64,9 @@ export interface ExecuteRemoteOperationOptions_v0 {
     operation: any[]
 }
 export type ExecuteRemoteOperationResult_v0 =
+    { status: 'success', result: any } |
     { status: 'app-not-found' } |
-    { status: 'app-not-supported' } |
-    { status: 'success', result: any }
+    { status: 'app-not-supported' }
 
 export interface SubscribeToEventOptions_v0 {
     request: SubscriptionRequest_v0

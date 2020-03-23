@@ -148,20 +148,20 @@ export async function registerOrIdentify(client: StorexHubApi_v0, options: { con
             name: APP_NAME,
             accessToken: existingConfig['accessToken']
         })
-        if (!identificationResult.success) {
-            throw new Error(`Couldn't identify app '${APP_NAME}': ${identificationResult.errorCode}`)
+        if (identificationResult.status !== 'success') {
+            throw new Error(`Couldn't identify app '${APP_NAME}': ${identificationResult.status}`)
         }
     } else {
         const registrationResult = await client.registerApp({
             name: APP_NAME,
             identify: true,
         })
-        if (registrationResult.success) {
+        if (registrationResult.status === 'success') {
             writeFileSync(options.configPath, JSON.stringify({
                 accessToken: registrationResult.accessToken
             }))
         } else {
-            throw new Error(`Couldn't register app '${APP_NAME}'": ${registrationResult.errorCode}`)
+            throw new Error(`Couldn't register app '${APP_NAME}'": ${registrationResult.status}`)
         }
     }
 

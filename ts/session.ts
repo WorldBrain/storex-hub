@@ -46,7 +46,7 @@ export class Session implements api.StorexHubApi_v0 {
         const storage = await this.options.getStorage()
         const existingApp = await storage.systemModules.apps.getApp(options.name)
         if (existingApp) {
-            return { success: false, errorCode: api.RegisterAppError_v0.APP_ALREADY_EXISTS, errorText: 'App already exists' }
+            return { status: 'app-already-exists' }
         }
 
         const accessToken = await this.options.accessTokenManager.createToken()
@@ -58,28 +58,28 @@ export class Session implements api.StorexHubApi_v0 {
         if (options.identify) {
             await this.identifyApp({ name: options.name, accessToken: accessToken.plainTextToken })
         }
-        return { success: true, accessToken: accessToken.plainTextToken }
+        return { status: 'success', accessToken: accessToken.plainTextToken }
     }
 
     async identifyApp(options: api.IdentifyAppOptions_v0): Promise<api.IdentifyAppResult_v0> {
         const storage = await this.options.getStorage()
         const existingApp = await storage.systemModules.apps.getApp(options.name)
         if (!existingApp) {
-            return { success: false, errorCode: api.IdentifyAppError_v0.INVALID_ACCESS_TOKEN, errorText: 'Invalid access token' }
+            return { status: 'invalid-access-token' }
         }
         const valid = await this.options.accessTokenManager.validateToken({ actualHash: existingApp.accessKeyHash, providedToken: options.accessToken })
-        if (valid) {
-            this.identifiedApp = { identifier: options.name, id: existingApp.id }
-            this.events.emit('appIdentified', { identifier: options.name, remote: !!existingApp.isRemote })
-            return { success: true }
-        } else {
-            return { success: false, errorCode: api.IdentifyAppError_v0.INVALID_ACCESS_TOKEN, errorText: 'Invalid access token' }
+        if (!valid) {
+            return { status: 'invalid-access-token' }
         }
+
+        this.identifiedApp = { identifier: options.name, id: existingApp.id }
+        this.events.emit('appIdentified', { identifier: options.name, remote: !!existingApp.isRemote })
+        return { status: 'success' }
     }
 
     async getSessionInfo(): Promise<api.GetSessionInfoResult_v0> {
         return {
-            success: true,
+            status: 'success',
             appIdentifier: this.identifiedApp && this.identifiedApp.identifier,
         }
     }
