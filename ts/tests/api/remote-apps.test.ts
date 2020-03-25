@@ -15,7 +15,7 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
             type: 'websocket',
             callbacks: {
                 handleRemoteOperation: async (options) => {
-                    operations.push(options.operation)
+                    operations.push(options)
                     return { result: ['foo', 'bla'] }
                 }
             }
@@ -28,9 +28,10 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
             app: 'memex',
             operation: ['findObjects', 'pages', { url: 'foo.com/bar' }]
         })
-        expect(operations).toEqual([
-            ['findObjects', 'pages', { url: 'foo.com/bar' }]
-        ])
+        expect(operations).toEqual([{
+            sourceApp: 'backup',
+            operation: ['findObjects', 'pages', { url: 'foo.com/bar' }]
+        }])
         expect(response).toEqual({
             status: 'success',
             result: ['foo', 'bla']

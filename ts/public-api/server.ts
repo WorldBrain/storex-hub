@@ -65,6 +65,7 @@ export interface ExecuteRemoteOperationOptions_v0 {
 }
 export type ExecuteRemoteOperationResult_v0 =
     { status: 'success', result: any } |
+    { status: 'not-identified' } |
     { status: 'app-not-found' } |
     { status: 'app-not-supported' }
 

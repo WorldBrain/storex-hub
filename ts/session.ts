@@ -4,27 +4,32 @@ import { AccessTokenManager } from "./access-tokens";
 import { Storage } from "./storage/types";
 import { AppSchema } from "./types/apps";
 import { EventEmitter } from "events";
+import { StorexHubCallbacks_v0, AllStorexHubCallbacks_v0 } from "./public-api";
+import { SingleArgumentOf, UnwrapPromise } from "./types/utils";
 
 export interface SessionOptions {
     accessTokenManager: AccessTokenManager
     getStorage: () => Promise<Storage>
     updateStorage: () => Promise<void>
 
-    executeCallback: (
-        (appIdentifier: string, methodName: string, methodOptions: any)
-            => Promise<api.ExecuteRemoteOperationResult_v0>
-    )
+    // executeCallback: <MethodName extends keyof StorexHubCallbacks_v0>(
+    //     (appIdentifier: string, methodName: MethodName, methodOptions: StorexHubCallbacks_v0[MethodName])
+    //         => Promise<api.ExecuteRemoteOperationResult_v0>
+    // )
     subscribeToEvent: (options: api.SubscribeToEventOptions_v0) => Promise<api.SubscribeToEventResult_v0>
     unsubscribeFromEvent: (options: api.UnsubscribeFromEventOptions_v0) => Promise<api.UnsubscribeFromEventResult_v0>
     emitEvent: (options: api.EmitEventOptions_v0) => Promise<api.EmitEventResult_v0>
 
     destroySession: () => Promise<void>
 
-    // executeCallback: (
-    //     <MethodName extends keyof StorexHubCallbacks_v0>
-    //         (appIdentifier: string, methodName: MethodName, methodOptions: SingleArgumentOf<StorexHubCallbacks_v0[MethodName]>)
-    //         => ReturnType<StorexHubCallbacks_v0[MethodName]>
-    // )
+    executeCallback: (
+        <MethodName extends keyof AllStorexHubCallbacks_v0>
+            (appIdentifier: string, methodName: MethodName, methodOptions: SingleArgumentOf<AllStorexHubCallbacks_v0[MethodName]>)
+            => Promise<
+                { status: 'success', result: UnwrapPromise<ReturnType<AllStorexHubCallbacks_v0[MethodName]>> } |
+                { status: 'app-not-found' }
+            >
+    )
 }
 export interface SessionEvents {
     appIdentified: (event: { identifier: string, remote: boolean }) => void
@@ -109,7 +114,12 @@ export class Session implements api.StorexHubApi_v0 {
     }
 
     async executeRemoteOperation(options: api.ExecuteRemoteOperationOptions_v0): Promise<api.ExecuteRemoteOperationResult_v0> {
+        if (!this.identifiedApp) {
+            return { status: 'not-identified' }
+        }
+
         const response = await this.options.executeCallback(options.app, 'handleRemoteOperation', {
+            sourceApp: this.identifiedApp.identifier,
             operation: options.operation,
         })
         if (response.status === 'success') {

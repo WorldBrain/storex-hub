@@ -6,9 +6,11 @@ export interface StorexHubCallbacks_v0 {
     handleSubscription?(options: HandleSubscriptionOptions_v0): Promise<HandleSubscriptionResult_v0>
     handleUnsubscription?(options: HandleUnsubscriptionOptions_v0): Promise<HandleUnubscriptionResult_v0>
 }
+export type AllStorexHubCallbacks_v0 = { [MethodName in keyof StorexHubCallbacks_v0]-?: StorexHubCallbacks_v0[MethodName] }
 
 export interface HandleRemoteOperationOptions_v0 {
     operation: any[]
+    sourceApp: string
 }
 
 export interface HandleRemoteOperationResult_v0 {

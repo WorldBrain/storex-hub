@@ -1,7 +1,7 @@
 import uuid from 'uuid/v4'
 import TypedEmitter from 'typed-emitter'
 import { StorageBackend } from "@worldbrain/storex";
-import { StorexHubApi_v0, StorexHubCallbacks_v0, ClientEvent, RemoteSubscriptionRequest_v0, SubscribeToEventResult_v0 } from "./public-api";
+import { StorexHubApi_v0, StorexHubCallbacks_v0, ClientEvent, RemoteSubscriptionRequest_v0, SubscribeToEventResult_v0, AllStorexHubCallbacks_v0 } from "./public-api";
 import { Session, SessionEvents } from "./session";
 import { AccessTokenManager } from "./access-tokens";
 import { Storage } from "./storage/types";
@@ -16,11 +16,11 @@ export interface ApplicationOptions {
     closeStorageBackend: (storageBackend: StorageBackend) => Promise<void>
 }
 export interface ApplicationApiOptions {
-    callbacks?: StorexHubCallbacks_v0
+    callbacks?: AllStorexHubCallbacks_v0
 }
 export class Application {
     private storage: Promise<Storage>
-    private remoteSessions: { [identifier: string]: StorexHubCallbacks_v0 } = {}
+    private remoteSessions: { [identifier: string]: AllStorexHubCallbacks_v0 } = {}
     private appEvents: { [identifier: string]: EventEmitter } = {}
     private events = new EventEmitter() as TypedEmitter<{
         'app-availability-changed': (event: { app: string, availability: boolean }) => void
@@ -55,13 +55,18 @@ export class Application {
                 })
                 await this.storage
             },
-            executeCallback: async (appIdentifier, methodName, methodOptions) => {
+            executeCallback: async <MethodName extends keyof AllStorexHubCallbacks_v0>(
+                appIdentifier: string,
+                methodName: MethodName,
+                methodOptions: SingleArgumentOf<AllStorexHubCallbacks_v0[MethodName]>
+            ) => {
                 const remoteSession = this.remoteSessions[appIdentifier]
                 if (!remoteSession) {
                     return { status: 'app-not-found' }
                 }
 
-                const result = await remoteSession[methodName](methodOptions)
+                const method = remoteSession[methodName] as AllStorexHubCallbacks_v0[MethodName]
+                const result = await method(methodOptions as any) as any
                 return { status: 'success', result }
             },
             subscribeToEvent: async ({ request }) => {
