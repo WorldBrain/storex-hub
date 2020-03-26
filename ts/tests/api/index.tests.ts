@@ -22,7 +22,7 @@ export interface TestSession {
     close(): Promise<void>
 }
 
-export type MultiApiOptions = { type: 'websocket' | 'http' } & ApplicationApiOptions
+export type MultiApiOptions = { type: 'websocket' | 'http' } & { callbacks?: StorexHubCallbacks_v0 }
 export type TestFactory<ApiOptions = never, OptionsRequired extends boolean = true> = (description: string, test?: (setup: TestSetup<ApiOptions, OptionsRequired>) => void | Promise<void>) => void
 export type TestSuite<ApiOptions = never, OptionsRequired extends boolean = true> = (options: { it: TestFactory<ApiOptions, OptionsRequired> }) => void
 type TestApplicationStorageBackend = 'dexie' | 'typeorm'

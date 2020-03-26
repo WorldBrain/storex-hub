@@ -4,9 +4,8 @@ import { DexieStorageBackend } from '@worldbrain/storex-backend-dexie'
 import inMemory from '@worldbrain/storex-backend-dexie/lib/in-memory'
 import { TypeORMStorageBackend } from "@worldbrain/storex-backend-typeorm";
 import { Application, ApplicationOptions } from "./application";
-import { DevelopmentAccessTokenManager, BcryptAccessTokenManager } from "./access-tokens";
+import { BcryptAccessTokenManager } from "./access-tokens";
 import { createHttpServer } from "./server";
-import { sequentialTokenGenerator } from "./access-tokens.tests";
 
 export async function main() {
     const application = new Application(getApplicationDependencies({
@@ -17,9 +16,23 @@ export async function main() {
         secretKey: 'very secret key'
     })
 
-    const port = 3000
+    const port = getPortNumber()
     await server.start({ port })
     console.log(`Server started at http://localhost:${port}`)
+}
+
+function getPortNumber(): number {
+    const fromEnv = process.env.STOREX_HUB_PORT
+    if (fromEnv) {
+        const port = parseInt(fromEnv)
+        if (!port) {
+            console.error(`Invalid STOREX_HUB_PORT environment variable: ${fromEnv}`)
+            process.exit(1)
+        }
+        return port
+    }
+
+    return process.env.NODE_ENV === 'production' ? 50482 : 50483
 }
 
 function getApplicationDependencies(options: { dbFilePath?: string }) {
