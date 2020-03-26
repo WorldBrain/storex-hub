@@ -4,7 +4,7 @@ import session from 'koa-session'
 import bodyParser from 'koa-bodyparser'
 const IO = require('koa-socket-2')
 import { Application } from "../application";
-import { STOREX_HUB_API_v0, StorexHubApi_v0, StorexHubCallbacks_v0 } from '../public-api';
+import { STOREX_HUB_API_v0, StorexHubApi_v0, StorexHubCallbacks_v0, AllStorexHubCallbacks_v0 } from '../public-api';
 import { Server } from 'http'
 import { SocketSessionMap } from './socket-session-map'
 import { Session } from '../session'
@@ -13,6 +13,10 @@ export async function createHttpServer(application: Application, options: {
     secretKey: string
 }) {
     const router = new Router()
+    router.get('/', async ctx => {
+        ctx.body = "Storex Hub is running. For documentation, go here:\nhttps://worldbrain.github.io/storex-docs/#/storex-hub/"
+    })
+
     const app = new Koa()
     app.keys = [options.secretKey]
     app.use(bodyParser())
@@ -89,7 +93,7 @@ function setupWebsocketServer(io: SocketIO.Server, application: Application) {
                         })
                     }
                 }
-            }) as StorexHubCallbacks_v0
+            }) as AllStorexHubCallbacks_v0
         }),
         destroySession: session => session.destroySession()
     })
