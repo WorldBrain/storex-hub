@@ -1,6 +1,6 @@
 {
   "name": "@worldbrain/storex-hub",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A single data store for your local Storex apps",
   "main": "lib/main.js",
   "scripts": {
