@@ -199,7 +199,8 @@ export async function main(options?: {
     const githubToken = requireEnvVar('GITHUB_TOKEN')
     const configPath = requireEnvVar('CONFIG_PATH')
 
-    const socket = io(`http://localhost:${options?.port || 3000}`)
+    const port = options?.port || (process.env.NODE_ENV === 'production' ? 50482 : 50483)
+    const socket = io(`http://localhost:${port}`)
     console.log('Connecting to Storex Hub')
     const client = await createStorexHubSocketClient(socket, {
         callbacks: {
