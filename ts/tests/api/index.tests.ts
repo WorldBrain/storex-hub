@@ -260,7 +260,7 @@ export function createMultiApiTestSuite(description: string, suite: TestSuite<Mu
 }
 
 export function getTestSuitePreferences(): TestSuitePreferences {
-    const suitePrefString = process.env.TEST_SUITES
+    const suitePrefString = process.env.STOREX_HUB_TEST_SUITES
     const defaultEnabled = !suitePrefString || suitePrefString === 'all'
     const preferences: TestSuitePreferences = {
         enabled: {
@@ -274,7 +274,7 @@ export function getTestSuitePreferences(): TestSuitePreferences {
     if (suitePrefString) {
         for (const type of suitePrefString.split(',')) {
             if (!(type in preferences.enabled)) {
-                throw new Error(`Invalid TEST_SUITES environment variable: ${suitePrefString}`)
+                throw new Error(`Invalid STOREX_HUB_TEST_SUITES environment variable: ${suitePrefString}`)
             }
             preferences.enabled[type] = true
         }

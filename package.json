@@ -58,6 +58,8 @@
     "fake-fs": "^0.5.0",
     "fake-indexeddb": "^2.0.4",
     "mocha": "^4.0.1",
+    "nw": "^0.44.5",
+    "nw-builder": "^3.5.7",
     "nyc": "^13.3.0",
     "sinon": "^4.1.2",
     "socket.io-client": "^2.3.0",
