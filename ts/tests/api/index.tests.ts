@@ -14,17 +14,22 @@ import { createHttpServer } from '../../server';
 import { StorexHubApi_v0, StorexHubCallbacks_v0 } from '../../public-api';
 import { createStorexHubClient, createStorexHubSocketClient } from '../../client';
 
-export type TestSetup<ApiOptions = never, OptionsRequired extends boolean = true> = OptionsRequired extends true
-    ? { createSession(options: ApiOptions): Promise<TestSession> }
-    : { createSession(options?: ApiOptions): Promise<TestSession> }
+export type TestSetup<ApiOptions = never, OptionsRequired extends boolean = true, Session = TestSession> = OptionsRequired extends true
+    ? { createSession(options: ApiOptions): Promise<Session> }
+    : { createSession(options?: ApiOptions): Promise<Session> }
 export interface TestSession {
     api: StorexHubApi_v0
     close(): Promise<void>
 }
+export interface WebSocketTestSession extends TestSession {
+    socket: SocketIOClient.Socket
+}
 
 export type MultiApiOptions = { type: 'websocket' | 'http' } & { callbacks?: StorexHubCallbacks_v0 }
-export type TestFactory<ApiOptions = never, OptionsRequired extends boolean = true> = (description: string, test?: (setup: TestSetup<ApiOptions, OptionsRequired>) => void | Promise<void>) => void
-export type TestSuite<ApiOptions = never, OptionsRequired extends boolean = true> = (options: { it: TestFactory<ApiOptions, OptionsRequired> }) => void
+export type TestFactory<ApiOptions = never, OptionsRequired extends boolean = true, Session = TestSession> =
+    (description: string, test?: (setup: TestSetup<ApiOptions, OptionsRequired, Session>) => void | Promise<void>) => void
+export type TestSuite<ApiOptions = never, OptionsRequired extends boolean = true, Session = TestSession> =
+    (options: { it: TestFactory<ApiOptions, OptionsRequired, Session> }) => void
 type TestApplicationStorageBackend = 'dexie' | 'typeorm'
 
 type TestSuiteType = 'direct.dexie' | 'http.dexie' | 'websocket.dexie' | 'websocket.sqlite'
@@ -34,7 +39,7 @@ interface TestSuitePreferences {
 
 let storageBackendsCreated = 0
 
-async function withTestApplication(body: (appliication: Application) => Promise<void>, options?: { storageBackend: TestApplicationStorageBackend }) {
+export async function withTestApplication(body: (appliication: Application) => Promise<void>, options?: { storageBackend: TestApplicationStorageBackend }) {
     global['navigator'] = { userAgent: 'memory' } // Dexie checks this even if it doesn't exist
 
     let applicationDependencies: ApplicationOptions
@@ -81,7 +86,7 @@ async function withTestApplication(body: (appliication: Application) => Promise<
     }
 }
 
-function createApiTestFactory() {
+export function createApiTestFactory() {
     const factory: TestFactory<ApplicationApiOptions, false> = (description, test?) => {
         it(description, test && (async () => {
             await withTestApplication(async application => {
@@ -99,7 +104,7 @@ function createApiTestFactory() {
     return factory
 }
 
-function createHttpTestFactory() {
+export function createHttpTestFactory() {
     const factory: TestFactory<ApplicationApiOptions, false> = (description, test?) => {
         it(description, test && (async () => {
             await withTestApplication(async application => {
@@ -138,8 +143,8 @@ function createSupertestApi(app: Koa) {
     )
 }
 
-function createWebsocketTestFactory(options?: { storageBackend: TestApplicationStorageBackend }) {
-    const factory: TestFactory<ApplicationApiOptions, false> = (description, test?) => {
+export function createWebsocketTestFactory(options?: { storageBackend: TestApplicationStorageBackend }) {
+    const factory: TestFactory<ApplicationApiOptions, false, WebSocketTestSession> = (description, test?) => {
         it(description, test && (async () => {
             await withTestApplication(async application => {
                 const server = await createHttpServer(application, {
@@ -157,6 +162,7 @@ function createWebsocketTestFactory(options?: { storageBackend: TestApplicationS
                             const client = await createStorexHubSocketClient(socket)
                             return {
                                 api: client,
+                                socket,
                                 async close() {
                                     socket.close()
                                 }
@@ -175,8 +181,8 @@ function createWebsocketTestFactory(options?: { storageBackend: TestApplicationS
     return factory
 }
 
-function createMultiApiTestFactory() {
-    const factory: TestFactory<MultiApiOptions> = (description, test?) => {
+export function createMultiApiTestFactory() {
+    const factory: TestFactory<MultiApiOptions, true> = (description, test?) => {
         it(description, test && (async () => {
             await withTestApplication(async application => {
                 const server = await createHttpServer(application, {

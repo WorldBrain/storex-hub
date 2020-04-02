@@ -91,6 +91,7 @@ export type UnsubscribeFromEventResult_v0 = void
 
 export interface EmitEventOptions_v0 {
     event: EmittableEvent_v0
+    synchronous?: boolean
 }
 export type EmitEventResult_v0 = void
 
