@@ -19,7 +19,8 @@ export interface ApplicationApiOptions {
     callbacks?: AllStorexHubCallbacks_v0
 }
 export class Application {
-    private storage: Promise<Storage>
+    public storage: Promise<Storage>
+
     private remoteSessions: { [identifier: string]: AllStorexHubCallbacks_v0 } = {}
     private appEvents: { [identifier: string]: EventEmitter } = {}
     private events = new EventEmitter() as TypedEmitter<{

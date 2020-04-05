@@ -8,10 +8,19 @@ import { BcryptAccessTokenManager } from "./access-tokens";
 import { createHttpServer } from "./server";
 
 export async function main() {
+    const application = await setupApplication()
+    await startServer(application)
+}
+
+export async function setupApplication() {
     const application = new Application(getApplicationDependencies({
         dbFilePath: process.env.DB_PATH,
     }))
     await application.setup()
+    return application
+}
+
+export async function startServer(application: Application) {
     const server = await createHttpServer(application, {
         secretKey: 'very secret key'
     })
@@ -19,6 +28,7 @@ export async function main() {
     const port = getPortNumber()
     await server.start({ port })
     console.log(`Server started at http://localhost:${port}`)
+    return server
 }
 
 function getPortNumber(): number {
