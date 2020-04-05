@@ -5,7 +5,7 @@
     "description": "My description",
     "siteUrl": "https://test.io/storex-hub",
     "apps": [],
-    "mainPath": "main.ts",
+    "mainPath": "main",
     "entryFunction": "main"
   }
 }

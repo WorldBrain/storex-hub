@@ -32,9 +32,9 @@ function validatePluginInfo(untrusted: any): PluginInfo | null {
 async function main() {
     const args = parseArgs()
     const pluginDirGlob = args.pluginGlobPattern.replace('<node_modules>', NODE_MODULES_DIR)
-    const pluginDirs = await fastGlob([pluginDirGlob], {
+    const pluginDirs = (await fastGlob([pluginDirGlob], {
         onlyDirectories: true
-    })
+    })).map(dir => path.resolve(dir))
 
     const application = await setupApplication()
     const storage = await application.storage

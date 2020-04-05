@@ -6,10 +6,17 @@ import { TypeORMStorageBackend } from "@worldbrain/storex-backend-typeorm";
 import { Application, ApplicationOptions } from "./application";
 import { BcryptAccessTokenManager } from "./access-tokens";
 import { createHttpServer } from "./server";
+import { PluginManager } from './plugins/manager';
 
 export async function main() {
     const application = await setupApplication()
     await startServer(application)
+
+    const storage = await application.storage
+    const pluginManager = new PluginManager({
+        pluginManagementStorage: storage.systemModules.plugins,
+    })
+    await pluginManager.setup(() => application.api())
 }
 
 export async function setupApplication() {

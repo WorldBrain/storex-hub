@@ -1,3 +1,4 @@
+import * as path from 'path'
 import { StorageModule, StorageModuleConfig } from "@worldbrain/storex-pattern-modules";
 import STORAGE_VERSIONS from "../../storage/versions";
 import { PluginInfo } from "../types";
@@ -45,11 +46,15 @@ export class PluginManagementStorage extends StorageModule {
     }
 
     async getPluginInfoByIdentifier(identifier: string) {
-        return (this.operation('findPluginByIdentifier', { identifier })) || null
+        return ((await this.operation('findPluginByIdentifier', { identifier })) || null)?.info
     }
 
     async getInfoForEnabledPlugins(): Promise<PluginInfo[]> {
-        return this.operation('getEnabledPlugins', {})
+        const records: any[] = (await this.operation('getEnabledPlugins', {}))
+        return records.map(record => ({
+            ...record.info,
+            mainPath: path.join(record.path, record.info.mainPath)
+        }))
     }
 
     _getNow = () => Date.now()

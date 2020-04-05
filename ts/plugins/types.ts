@@ -1,3 +1,5 @@
+import { StorexHubApi_v0 } from "../public-api";
+
 export interface PluginInfo {
     identifier: string
     version: string
@@ -7,3 +9,10 @@ export interface PluginInfo {
     mainPath: string
     entryFunction: string
 }
+
+export interface PluginInterface {
+    start(): Promise<void>
+    stop(): Promise<void>
+}
+
+export type PluginEntryFunction = (input: { api: StorexHubApi_v0 }) => Promise<PluginInterface>
