@@ -6,6 +6,7 @@
     "strict": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
     "removeComments": true,
     "lib": ["es2017", "dom"],
     "noLib": false,

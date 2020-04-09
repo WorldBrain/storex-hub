@@ -6,11 +6,13 @@ import { EventEmitter } from "events";
 import { StorexHubCallbacks_v0, AllStorexHubCallbacks_v0 } from "./public-api";
 import { SingleArgumentOf, UnwrapPromise } from "./types/utils";
 import { AppSchema } from "@worldbrain/storex-hub-interfaces/lib/apps";
+import StorageManager from "@worldbrain/storex";
 
 export interface SessionOptions {
     accessTokenManager: AccessTokenManager
     getStorage: () => Promise<Storage>
-    updateStorage: () => Promise<void>
+    getAppStorage: (identifiedApp: IdentifiedApp) => Promise<StorageManager>
+    updateStorage: (identifiedApp: IdentifiedApp) => Promise<void>
 
     // executeCallback: <MethodName extends keyof StorexHubCallbacks_v0>(
     //     (appIdentifier: string, methodName: MethodName, methodOptions: StorexHubCallbacks_v0[MethodName])
@@ -90,7 +92,12 @@ export class Session implements api.StorexHubApi_v0 {
     }
 
     async executeOperation(options: { operation: any[] }): Promise<{ result: any }> {
-        return { result: await (await this.options.getStorage()).manager.operation(options.operation[0], ...options.operation.slice(1)) }
+        if (!this.identifiedApp) {
+            throw new Error(`Operation executed without app identification`)
+        }
+        const appStorage = await this.options.getAppStorage(this.identifiedApp)
+
+        return { result: await appStorage.operation(options.operation[0], ...options.operation.slice(1)) }
     }
 
     async updateSchema(options: { schema: AppSchema }): Promise<api.UpdateSchemaResult_v0> {
@@ -109,7 +116,7 @@ export class Session implements api.StorexHubApi_v0 {
         await (await this.options.getStorage()).systemModules.apps.updateSchema(
             this.identifiedApp.id, options.schema,
         )
-        await this.options.updateStorage()
+        await this.options.updateStorage(this.identifiedApp)
         return { success: true }
     }
 
@@ -153,25 +160,11 @@ export class Session implements api.StorexHubApi_v0 {
 
 export async function checkAppSchema(schema: AppSchema, options: { identifiedApp: IdentifiedApp }): Promise<api.UpdateSchemaResult_v0> {
     for (const [collectionName] of Object.entries(schema.collectionDefinitions || {})) {
-        const collectionNameMatch = /^([a-zA-Z]+)(?:\:([a-zA-Z]+))?$/.exec(collectionName)
+        const collectionNameMatch = /^[a-zA-Z]+$/.exec(collectionName)
         if (!collectionNameMatch) {
             return {
                 success: false, errorCode: api.UpdateSchemaError_v0.BAD_REQUEST,
                 errorText: `Cannot create collection with invalid name '${collectionName}'`
-            }
-        }
-
-        if (!collectionNameMatch[2]) {
-            return {
-                success: false, errorCode: api.UpdateSchemaError_v0.SCHEMA_NOT_ALLOWED,
-                errorText: `Cannot create non-namespaced collection '${collectionName}'`
-            }
-        }
-
-        if (collectionNameMatch[1] !== options.identifiedApp.identifier) {
-            return {
-                success: false, errorCode: api.UpdateSchemaError_v0.SCHEMA_NOT_ALLOWED,
-                errorText: `Cannot created collection '${collectionNameMatch[2]}' in app namespace '${collectionNameMatch[1]}'`
             }
         }
     }

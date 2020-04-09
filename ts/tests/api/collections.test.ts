@@ -11,7 +11,7 @@ export default createApiTestSuite('Collection registration and data operations',
         const updateSchemaResult = await app.updateSchema({
             schema: {
                 collectionDefinitions: {
-                    'contacts:user': TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })
+                    'user': TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })
                 }
             }
         })
@@ -20,7 +20,7 @@ export default createApiTestSuite('Collection registration and data operations',
         })
 
         const { result: createResult } = await app.executeOperation({
-            operation: ['createObject', 'contacts:user', {
+            operation: ['createObject', 'user', {
                 email: 'john@doe.com',
             }]
         })
@@ -31,7 +31,7 @@ export default createApiTestSuite('Collection registration and data operations',
             }
         })
 
-        const { result: fieldResult } = await app.executeOperation({ operation: ['findObjects', 'contacts:user', {}] })
+        const { result: fieldResult } = await app.executeOperation({ operation: ['findObjects', 'user', {}] })
         expect(fieldResult).toEqual([{
             id: createResult.object.id,
             email: 'john@doe.com',
@@ -59,42 +59,6 @@ export default createApiTestSuite('Collection registration and data operations',
         await tryUpdate('u8')
         await tryUpdate('u-t')
         await tryUpdate('u!')
-    })
-
-    it('should not allow the creation of collections without namespaces', async ({ createSession }) => {
-        const { api: app } = await createSession()
-        await app.registerApp({ name: 'contacts', identify: true })
-
-        const result = await app.updateSchema({
-            schema: {
-                collectionDefinitions: {
-                    'user': TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })
-                }
-            }
-        })
-        expect(result).toEqual({
-            success: false,
-            errorCode: UpdateSchemaError_v0.SCHEMA_NOT_ALLOWED,
-            errorText: `Cannot create non-namespaced collection 'user'`
-        })
-    })
-
-    it('should not allow the creation of collections in other namespaces', async ({ createSession }) => {
-        const { api: app } = await createSession()
-        await app.registerApp({ name: 'contacts', identify: true })
-
-        const result = await app.updateSchema({
-            schema: {
-                collectionDefinitions: {
-                    'calendar:user': TEST_COLLECTION_DEFINITIONS.simpleUser({ fields: new Set<'email'>(['email']) })
-                }
-            }
-        })
-        expect(result).toEqual({
-            success: false,
-            errorCode: UpdateSchemaError_v0.SCHEMA_NOT_ALLOWED,
-            errorText: `Cannot created collection 'user' in app namespace 'calendar'`
-        })
     })
 
     it('should by default not allow fetching data from other apps')

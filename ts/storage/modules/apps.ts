@@ -86,4 +86,11 @@ export class AppStorage extends StorageModule {
             schema: JSON.parse(schemaObject.schema, jsonReviver)
         }))
     }
+
+    async getAppSchema(id: number) {
+        const jsonReviver = extendedJSONReviver({ withDates: true })
+
+        const schemaObject = await this.operation('getSchema', { app: id });
+        return { schema: JSON.parse(schemaObject.schema, jsonReviver) }
+    }
 }
