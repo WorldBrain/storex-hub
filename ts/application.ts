@@ -1,25 +1,26 @@
 import uuid from 'uuid/v4'
 import TypedEmitter from 'typed-emitter'
-import { StorageBackend } from "@worldbrain/storex";
+import StorageManager, { StorageBackend } from "@worldbrain/storex";
 import { StorexHubApi_v0, StorexHubCallbacks_v0, ClientEvent, RemoteSubscriptionRequest_v0, SubscribeToEventResult_v0, AllStorexHubCallbacks_v0 } from "./public-api";
 import { Session, SessionEvents } from "./session";
 import { AccessTokenManager } from "./access-tokens";
 import { Storage } from "./storage/types";
-import { createStorage } from "./storage";
+import { createStorage, createAppStorage } from "./storage";
 import { SingleArgumentOf } from "./types/utils";
 import { EventEmitter } from "events";
 import { isRemoteSubscriptionRequest } from './public-api/utils';
 
 export interface ApplicationOptions {
     accessTokenManager: AccessTokenManager
-    createStorageBackend: () => StorageBackend
-    closeStorageBackend: (storageBackend: StorageBackend) => Promise<void>
+    createStorageBackend: (options: { appIdentifier: string }) => StorageBackend
+    closeStorageBackend: (storageBackend: StorageBackend, options: { appIdentifier: string }) => Promise<void>
 }
 export interface ApplicationApiOptions {
     callbacks?: AllStorexHubCallbacks_v0
 }
 export class Application {
     public storage: Promise<Storage>
+    private appStorageManagers: { [appId: number]: Promise<StorageManager> } = {}
 
     private remoteSessions: { [identifier: string]: AllStorexHubCallbacks_v0 } = {}
     private appEvents: { [identifier: string]: EventEmitter } = {}
@@ -28,7 +29,11 @@ export class Application {
     }>
 
     constructor(private options: ApplicationOptions) {
-        this.storage = createStorage({ createBackend: options.createStorageBackend })
+        this.storage = createStorage({
+            storageBackend: options.createStorageBackend({
+                appIdentifier: '_system'
+            })
+        })
     }
 
     async setup() {
@@ -46,15 +51,25 @@ export class Application {
         const session = new Session({
             accessTokenManager: this.options.accessTokenManager,
             getStorage: () => this.storage,
-            updateStorage: async () => {
+            getAppStorage: async (identifiedApp) => {
+                const appId = identifiedApp.id
+                if (!this.appStorageManagers[appId]) {
+                    this.appStorageManagers[appId] = createAppStorage({
+                        storage: await this.storage,
+                        storageBackend: this.options.createStorageBackend({
+                            appIdentifier: identifiedApp.identifier
+                        }),
+                        appId: appId as number,
+                    })
+                }
+                return this.appStorageManagers[appId]
+            },
+            updateStorage: async (identifiedApp) => {
                 const currentStorage = await this.storage
-                const appSchemas = await currentStorage.systemModules.apps.getAppSchemas()
-                await this.options.closeStorageBackend(currentStorage.manager.backend);
-                this.storage = createStorage({
-                    createBackend: this.options.createStorageBackend,
-                    appSchemas: appSchemas.map(appSchema => appSchema.schema)
+                await this.options.closeStorageBackend(currentStorage.manager.backend, {
+                    appIdentifier: identifiedApp.identifier,
                 })
-                await this.storage
+                delete this.appStorageManagers[identifiedApp.id]
             },
             executeCallback: async <MethodName extends keyof AllStorexHubCallbacks_v0>(
                 appIdentifier: string,

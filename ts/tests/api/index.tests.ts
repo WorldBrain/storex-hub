@@ -1,3 +1,4 @@
+import * as path from 'path'
 import tempy from 'tempy'
 import del from 'del'
 import Koa from 'koa'
@@ -45,36 +46,39 @@ export async function withTestApplication(body: (appliication: Application) => P
     let applicationDependencies: ApplicationOptions
     let cleanup: (() => Promise<void>) | undefined
     if (options?.storageBackend === 'typeorm') {
-        const dbFilePath = tempy.file({ extension: 'storex-hub-test.sqlite' })
-        const createStorageBackend = () => new TypeORMStorageBackend({
-            connectionOptions: {
-                type: 'sqlite',
-                database: dbFilePath,
-                name: `connection-${++storageBackendsCreated}`,
-            },
-        })
-        const closeStorageBackend = async (storageBackend: StorageBackend) => {
-            await (storageBackend as TypeORMStorageBackend).connection?.close?.()
-        }
+        const dbDirectory = tempy.directory()
         cleanup = async () => {
-            await del(dbFilePath)
+            await del(dbDirectory)
         }
 
         applicationDependencies = {
             accessTokenManager: new DevelopmentAccessTokenManager({ tokenGenerator: sequentialTokenGenerator() }),
-            createStorageBackend,
-            closeStorageBackend,
+            createStorageBackend: (backendOptions) => new TypeORMStorageBackend({
+                connectionOptions: {
+                    type: 'sqlite',
+                    database: path.join(dbDirectory, backendOptions.appIdentifier),
+                    name: `connection-${++storageBackendsCreated}`,
+                },
+            }),
+            closeStorageBackend: async (storageBackend: StorageBackend) => {
+                await (storageBackend as TypeORMStorageBackend).connection?.close?.()
+            },
         }
     } else {
-        const idbImplementation = inMemory()
-        const createStorageBackend = () => new DexieStorageBackend({ dbName: 'test', idbImplementation })
-        const closeStorageBackend = async (storageBackend: StorageBackend) => {
-            await (storageBackend as DexieStorageBackend).dexieInstance.close()
-        }
+        const idbImplementations: { [appIdentifier: string]: ReturnType<typeof inMemory> } = {}
         applicationDependencies = {
             accessTokenManager: new DevelopmentAccessTokenManager({ tokenGenerator: sequentialTokenGenerator() }),
-            createStorageBackend,
-            closeStorageBackend,
+            createStorageBackend: (backupOptions) => {
+                if (!idbImplementations[backupOptions.appIdentifier]) {
+                    idbImplementations[backupOptions.appIdentifier] = inMemory()
+                }
+                return new DexieStorageBackend({
+                    dbName: backupOptions.appIdentifier, idbImplementation: idbImplementations[backupOptions.appIdentifier]
+                })
+            },
+            closeStorageBackend: async (storageBackend: StorageBackend) => {
+                // await (storageBackend as DexieStorageBackend).dexieInstance.close()
+            },
         }
     }
 
