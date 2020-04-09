@@ -1,15 +1,19 @@
-import { join } from 'path';
+import * as fs from 'fs';
+import * as path from 'path'
 import cryptoRandomString from 'crypto-random-string'
 import { StorageBackend } from "@worldbrain/storex";
 import { DexieStorageBackend } from '@worldbrain/storex-backend-dexie'
 import inMemory from '@worldbrain/storex-backend-dexie/lib/in-memory'
 import { TypeORMStorageBackend } from "@worldbrain/storex-backend-typeorm";
+
 import { Application, ApplicationOptions } from "./application";
 import { BcryptAccessTokenManager } from "./access-tokens";
-import { createHttpServer } from "./server";
+
 import { PluginManager } from './plugins/manager';
 import { discoverInstalledPlugins } from './plugins/discovery/main';
 import { PluginInstallConfirmer } from './plugins/discovery';
+
+import { createHttpServer } from "./server";
 
 export interface RuntimeConfig {
     dbFilePath?: string
@@ -56,7 +60,7 @@ async function maybeRunPluginDiscovery(application: Application, options?: {
     }
 
     await discoverInstalledPlugins(application, {
-        nodeModulesPath: join(process.cwd(), 'node_modules'),
+        nodeModulesPath: path.join(process.cwd(), 'node_modules'),
         pluginDirGlob: patternOrTrue.toLowerCase() !== 'true' ? patternOrTrue : undefined,
         confirmPluginInstall: options?.confirmPluginInstall,
     })
@@ -99,6 +103,18 @@ function getPortNumber(): number {
     return process.env.NODE_ENV === 'production' ? 50482 : 50483
 }
 
+function getDBFilePath(configured: string, appIdentifier: string) {
+    const isDir = fs.statSync(configured).isDirectory()
+    if (isDir) {
+        return path.join(configured, `appIdentifier.sqlite3`)
+    }
+    if (appIdentifier === '_system') {
+        return configured
+    }
+
+    return path.join(path.dirname(configured), `${appIdentifier}.sqlite3`)
+}
+
 function getApplicationDependencies(options: { dbFilePath?: string }) {
     let applicationDependencies: ApplicationOptions
     const accessTokenManager = new BcryptAccessTokenManager({
@@ -107,21 +123,18 @@ function getApplicationDependencies(options: { dbFilePath?: string }) {
 
     let storageBackendsCreated = 0
     if (options.dbFilePath) {
-        const createStorageBackend = () => new TypeORMStorageBackend({
-            connectionOptions: {
-                type: 'sqlite',
-                database: options.dbFilePath,
-                name: `connection-${++storageBackendsCreated}`,
-            } as any,
-        })
-        const closeStorageBackend = async (storageBackend: StorageBackend) => {
-            await (storageBackend as TypeORMStorageBackend).connection?.close?.()
-        }
-
         applicationDependencies = {
             accessTokenManager,
-            createStorageBackend,
-            closeStorageBackend,
+            createStorageBackend: ({ appIdentifier }) => new TypeORMStorageBackend({
+                connectionOptions: {
+                    type: 'sqlite',
+                    database: getDBFilePath(options.dbFilePath!, appIdentifier),
+                    name: `connection-${++storageBackendsCreated}`,
+                } as any,
+            }),
+            closeStorageBackend: async (storageBackend: StorageBackend) => {
+                await (storageBackend as TypeORMStorageBackend).connection?.close?.()
+            }
         }
     } else {
         try {
@@ -131,15 +144,20 @@ function getApplicationDependencies(options: { dbFilePath?: string }) {
             // ...but we don't care if it fails
         }
 
-        const idbImplementation = inMemory()
-        const createStorageBackend = () => new DexieStorageBackend({ dbName: 'test', idbImplementation })
-        const closeStorageBackend = async (storageBackend: StorageBackend) => {
-            await (storageBackend as DexieStorageBackend).dexieInstance.close()
-        }
+        const idbImplementations: { [appIdentifier: string]: ReturnType<typeof inMemory> } = {}
         applicationDependencies = {
             accessTokenManager,
-            createStorageBackend,
-            closeStorageBackend,
+            createStorageBackend: (backupOptions) => {
+                if (!idbImplementations[backupOptions.appIdentifier]) {
+                    idbImplementations[backupOptions.appIdentifier] = inMemory()
+                }
+                return new DexieStorageBackend({
+                    dbName: backupOptions.appIdentifier, idbImplementation: idbImplementations[backupOptions.appIdentifier]
+                })
+            },
+            closeStorageBackend: async (storageBackend: StorageBackend) => {
+                // await (storageBackend as DexieStorageBackend).dexieInstance.close()
+            },
         }
     }
 
