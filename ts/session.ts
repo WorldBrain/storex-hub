@@ -1,3 +1,5 @@
+import pick from 'lodash/pick'
+import omit from 'lodash/omit'
 import * as api from "./public-api";
 import TypedEmitter from 'typed-emitter'
 import { AccessTokenManager } from "./access-tokens";
@@ -155,6 +157,53 @@ export class Session implements api.StorexHubApi_v0 {
             await this.options.destroySession()
             this.destroyed = true
         }
+    }
+
+    getAppSettings: api.StorexHubApi_v0['getAppSettings'] = async (options) => {
+        if (!this.identifiedApp) {
+            return { status: 'not-identified' }
+        }
+
+        const storage = await this.options.getStorage()
+        const existingSettings = await storage.systemModules.apps.getAppSettings(this.identifiedApp.id as number)
+        const settings = options.keys === 'all'
+            ? existingSettings || {}
+            : pick(existingSettings || {}, options.keys)
+
+        return { status: 'success', settings }
+    }
+
+    setAppSettings: api.StorexHubApi_v0['setAppSettings'] = async (options) => {
+        if (!this.identifiedApp) {
+            return { status: 'not-identified' }
+        }
+
+        const storage = await this.options.getStorage()
+        const existingSettings = await storage.systemModules.apps.getAppSettings(this.identifiedApp.id as number)
+        const newSettings = { ...(existingSettings || {}), ...options.updates }
+        await storage.systemModules.apps.setAppSettings(this.identifiedApp.id as number, newSettings)
+
+        return { status: 'success' }
+    }
+
+    deleteAppSettings: api.StorexHubApi_v0['deleteAppSettings'] = async (options) => {
+        if (!this.identifiedApp) {
+            return { status: 'not-identified' }
+        }
+
+        const storage = await this.options.getStorage()
+        const existingSettings = await storage.systemModules.apps.getAppSettings(this.identifiedApp.id as number)
+        if (!existingSettings) {
+            if (options.keys === 'all') {
+                return { status: 'success' }
+            } else {
+                return { status: 'non-existing-keys', keys: options.keys }
+            }
+        }
+        const newSettings = options.keys === 'all' ? {} : omit(existingSettings, options.keys)
+        await storage.systemModules.apps.setAppSettings(this.identifiedApp.id as number, newSettings)
+
+        return { status: 'success' }
     }
 }
 

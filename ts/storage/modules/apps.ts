@@ -1,5 +1,6 @@
 import { StorageModule, StorageModuleConfig } from '@worldbrain/storex-pattern-modules'
 import { AppSchema } from '@worldbrain/storex-hub-interfaces/lib/apps';
+import { AppSettingValue } from '@worldbrain/storex-hub-interfaces/lib/api/server';
 import STORAGE_VERSIONS from '../versions';
 import { extendedJSONReviver } from '../../utils/json';
 
@@ -23,6 +24,15 @@ export class AppStorage extends StorageModule {
                     relationships: [
                         { singleChildOf: 'app' }
                     ]
+                },
+                appSettingsObject: {
+                    version: STORAGE_VERSIONS[1],
+                    fields: {
+                        settings: { type: 'json' },
+                    },
+                    relationships: [
+                        { childOf: 'app' }
+                    ],
                 }
             },
             operations: {
@@ -57,6 +67,23 @@ export class AppStorage extends StorageModule {
                     collection: 'appSchema',
                     args: {}
                 },
+                createSettings: {
+                    operation: 'createObject',
+                    collection: 'appSettingsObject',
+                },
+                findSettings: {
+                    operation: 'findObject',
+                    collection: 'appSettingsObject',
+                    args: { app: '$appId:pk' },
+                },
+                updateSettings: {
+                    operation: 'updateObject',
+                    collection: 'appSettingsObject',
+                    args: [
+                        { app: '$appId:pk' },
+                        { settings: '$settings:json' }
+                    ],
+                }
             }
         }
     }
@@ -69,13 +96,13 @@ export class AppStorage extends StorageModule {
         return this.operation('findAppByIdentifier', { identifier })
     }
 
-    async updateSchema(app: string | number, schema: AppSchema) {
-        const existingSchema = await this.operation('getSchema', { app })
+    async updateSchema(appId: string | number, schema: AppSchema) {
+        const existingSchema = await this.operation('getSchema', { app: appId })
         const serialized = JSON.stringify(schema, null, 4)
         if (existingSchema) {
-            await this.operation('updateSchema', { app, schema: serialized })
+            await this.operation('updateSchema', { app: appId, schema: serialized })
         } else {
-            await this.operation('createSchema', { app, schema: serialized })
+            await this.operation('createSchema', { app: appId, schema: serialized })
         }
     }
 
@@ -87,10 +114,24 @@ export class AppStorage extends StorageModule {
         }))
     }
 
-    async getAppSchema(id: number) {
+    async getAppSchema(appId: number) {
         const jsonReviver = extendedJSONReviver({ withDates: true })
 
-        const schemaObject = await this.operation('getSchema', { app: id });
+        const schemaObject = await this.operation('getSchema', { app: appId });
         return { schema: JSON.parse(schemaObject.schema, jsonReviver) }
+    }
+
+    async getAppSettings(appId: number) {
+        const object = await this.operation('findSettings', { appId })
+        return object ? object.settings : null
+    }
+
+    async setAppSettings(appId: number, settings: { [key: string]: AppSettingValue }) {
+        const object = await this.operation('findSettings', { appId })
+        if (object) {
+            await this.operation('updateSettings', { appId, settings })
+        } else {
+            await this.operation('createSettings', { app: appId, settings })
+        }
     }
 }
