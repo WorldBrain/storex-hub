@@ -5,7 +5,6 @@
   "main": "lib/main.js",
   "scripts": {
     "start": "ts-node ts/main.ts",
-    "discover-plugins": "ts-node ts/plugins/discovery/main.ts",
     "prepare": "tsc",
     "prepare:watch": "npm run prepare -- -w",
     "test": "mocha --require ts-node/register \"ts/**/*.test.ts\"",

@@ -1,3 +1,4 @@
+import { join } from 'path';
 import cryptoRandomString from 'crypto-random-string'
 import { StorageBackend } from "@worldbrain/storex";
 import { DexieStorageBackend } from '@worldbrain/storex-backend-dexie'
@@ -7,16 +8,13 @@ import { Application, ApplicationOptions } from "./application";
 import { BcryptAccessTokenManager } from "./access-tokens";
 import { createHttpServer } from "./server";
 import { PluginManager } from './plugins/manager';
+import { discoverInstalledPlugins } from './plugins/discovery/main';
 
 export async function main() {
     const application = await setupApplication()
+    await maybeRunPluginDiscovery(application)
     await startServer(application)
-
-    const storage = await application.storage
-    const pluginManager = new PluginManager({
-        pluginManagementStorage: storage.systemModules.plugins,
-    })
-    await pluginManager.setup(() => application.api())
+    await loadPlugins(application)
 }
 
 export async function setupApplication() {
@@ -25,6 +23,33 @@ export async function setupApplication() {
     }))
     await application.setup()
     return application
+}
+
+async function maybeRunPluginDiscovery(application: Application) {
+    if (!process.env.STOREX_HUB_DISCOVER_PLUGINS) {
+        return
+    }
+
+    const patternOrTrue = process.env.STOREX_HUB_DISCOVER_PLUGINS
+    if (patternOrTrue.toLowerCase() === 'false') {
+        return
+    }
+
+    await discoverInstalledPlugins(application, {
+        nodeModulesPath: join(process.cwd(), 'node_modules'),
+        pluginDirGlob: patternOrTrue.toLowerCase() !== 'true' ? patternOrTrue : undefined
+    })
+
+    // TODO: Don't know why yet, but added plugins do not immediately get stored
+    await new Promise(resolve => setTimeout(resolve, 1000))
+}
+
+async function loadPlugins(application: Application) {
+    const storage = await application.storage
+    const pluginManager = new PluginManager({
+        pluginManagementStorage: storage.systemModules.plugins,
+    })
+    await pluginManager.setup(() => application.api())
 }
 
 export async function startServer(application: Application) {

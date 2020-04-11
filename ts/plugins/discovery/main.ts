@@ -1,42 +1,27 @@
 import path from 'path'
 import { existsSync, readFileSync } from 'fs'
-import yargs from 'yargs'
 import fastGlob from 'fast-glob'
 import createPrompt from 'prompt-sync'
-import { PROJECT_ROOT } from '../../constants'
-import { setupApplication } from '../../main'
 import { discoverPlugins } from '.'
 import { PluginInfo } from '../types'
+import { Application } from '../../application'
 const prompt = createPrompt()
-
-interface Args {
-    pluginGlobPattern: string
-}
-
-const NODE_MODULES_DIR = path.join(PROJECT_ROOT, 'node_modules')
-
-function parseArgs(): Args {
-    return yargs
-        .option('plugin-glob-pattern', {
-            description: 'Where to look for plugins',
-            default: '<node_modules>/storex-hub-plugin-*',
-            type: 'string',
-        })
-        .argv as any as Args
-}
 
 function validatePluginInfo(untrusted: any): PluginInfo | null {
     return untrusted
 }
 
-async function main() {
-    const args = parseArgs()
-    const pluginDirGlob = args.pluginGlobPattern.replace('<node_modules>', NODE_MODULES_DIR)
+export async function discoverInstalledPlugins(application: Application, options: {
+    pluginDirGlob?: string
+    nodeModulesPath: string
+}) {
+    const pluginDirGlob = (
+        options.pluginDirGlob || '<node_modules>/storex-hub-plugin-*'
+    ).replace('<node_modules>', options.nodeModulesPath)
     const pluginDirs = (await fastGlob([pluginDirGlob], {
         onlyDirectories: true
     })).map(dir => path.resolve(dir))
 
-    const application = await setupApplication()
     const storage = await application.storage
 
     await discoverPlugins(pluginDirs, {
@@ -91,8 +76,4 @@ async function main() {
             }
         },
     })
-}
-
-if (require.main === module) {
-    main()
 }
