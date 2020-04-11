@@ -60,7 +60,12 @@ function getApplicationDependencies(options: { dbFilePath?: string }) {
             closeStorageBackend,
         }
     } else {
-        global['navigator'] = { userAgent: 'memory' } // Dexie checks this even if it doesn't exist
+        try {
+            // Dexie checks this even if it doesn't exist...
+            global['navigator'] = { userAgent: 'memory' }
+        } catch (e) {
+            // ...but we don't care if it fails
+        }
 
         const idbImplementation = inMemory()
         const createStorageBackend = () => new DexieStorageBackend({ dbName: 'test', idbImplementation })
