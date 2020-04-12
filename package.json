@@ -65,7 +65,7 @@
     "nyc": "^13.3.0",
     "sinon": "^4.1.2",
     "source-map-support": "0.5.16",
-    "storex-hub-plugin-internal-selftest": "^0.0.1",
+    "storex-hub-plugin-internal-selftest": "^0.0.2",
     "ts-node": "^7.0.1",
     "typescript": "^3.7.5",
     "@types/prompt-sync": "^4.1.0",
