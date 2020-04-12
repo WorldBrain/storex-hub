@@ -1,9 +1,11 @@
-import { PluginInfo } from "../types";
+import { PluginInfo } from "@worldbrain/storex-hub-interfaces/lib/plugins";
 import { PluginManagementStorage } from "../storage";
+
+export type PluginInstallConfirmer = (pluginInfo: PluginInfo, options: { pluginDir: string }) => Promise<'install' | 'skip' | 'abort'>
 
 export async function discoverPlugins(pluginDirs: string[], options: {
     getPluginInfo: (pluginDir: string) => Promise<PluginInfo | null>
-    confirmPluginInstall: (pluginInfo: PluginInfo, options: { pluginDir: string }) => Promise<'install' | 'skip' | 'abort'>
+    confirmPluginInstall: PluginInstallConfirmer
     pluginManagementStorage: PluginManagementStorage
 }) {
     for (const pluginDir of pluginDirs) {

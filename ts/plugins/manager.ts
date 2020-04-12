@@ -1,8 +1,10 @@
 import { PluginManagementStorage } from "./storage";
-import { PluginInfo, PluginEntryFunction, PluginInterface } from "./types";
+import { PluginInfo, PluginEntryFunction, PluginInterface } from "@worldbrain/storex-hub-interfaces/lib/plugins";
 import { StorexHubApi_v0 } from "../public-api";
 
 export class PluginManager {
+    loadedPlugins: { [identifier: string]: PluginInterface } = {}
+
     constructor(private options: {
         pluginManagementStorage: PluginManagementStorage
     }) {
@@ -39,15 +41,14 @@ export class PluginManager {
             return null
         }
 
-        let plugin: PluginInterface
         try {
-            plugin = await entryFunction({ api: await createAPI() })
+            this.loadedPlugins[pluginInfo.identifier] = await entryFunction({ api: await createAPI() })
         } catch (e) {
             console.error(`ERROR during initialization plugin '${pluginInfo.identifier}':`)
             console.error(e)
             return null
         }
 
-        return plugin
+        return this.loadedPlugins[pluginInfo.identifier]
     }
 }

@@ -1,7 +1,7 @@
+import expect from "expect"
+import { PluginInfo } from "@worldbrain/storex-hub-interfaces/lib/plugins"
 import { withTestApplication } from "../../tests/api/index.tests"
 import { discoverPlugins } from "."
-import { PluginInfo } from "../types"
-import expect from "expect"
 import { Application } from "../../application"
 
 const PLUGINS: { [path: string]: PluginInfo } = {

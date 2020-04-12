@@ -1,7 +1,7 @@
 import * as path from 'path'
 import { StorageModule, StorageModuleConfig } from "@worldbrain/storex-pattern-modules";
 import STORAGE_VERSIONS from "../../storage/versions";
-import { PluginInfo } from "../types";
+import { PluginInfo } from '@worldbrain/storex-hub-interfaces/lib/plugins';
 
 export class PluginManagementStorage extends StorageModule {
     getConfig = (): StorageModuleConfig => ({

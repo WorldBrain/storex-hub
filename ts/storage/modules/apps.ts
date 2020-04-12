@@ -1,7 +1,6 @@
 import { StorageModule, StorageModuleConfig } from '@worldbrain/storex-pattern-modules'
+import { AppSchema } from '@worldbrain/storex-hub-interfaces/lib/apps';
 import STORAGE_VERSIONS from '../versions';
-import { CollectionDefinitionMap } from '@worldbrain/storex';
-import { AppSchema } from '../../types/apps';
 import { extendedJSONReviver } from '../../utils/json';
 
 export class AppStorage extends StorageModule {

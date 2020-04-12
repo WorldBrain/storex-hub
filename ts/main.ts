@@ -9,35 +9,56 @@ import { BcryptAccessTokenManager } from "./access-tokens";
 import { createHttpServer } from "./server";
 import { PluginManager } from './plugins/manager';
 import { discoverInstalledPlugins } from './plugins/discovery/main';
+import { PluginInstallConfirmer } from './plugins/discovery';
 
-export async function main() {
-    const application = await setupApplication()
-    await maybeRunPluginDiscovery(application)
-    await startServer(application)
-    await loadPlugins(application)
+export interface RuntimeConfig {
+    dbFilePath?: string
+    discoverPlugins?: string
 }
 
-export async function setupApplication() {
-    const application = new Application(getApplicationDependencies({
+export async function main(options?: {
+    runtimeConfig?: RuntimeConfig,
+    confirmPluginInstall?: PluginInstallConfirmer,
+    withoutServer?: boolean
+}) {
+    const runtimeConfig = options?.runtimeConfig ?? getRuntimeConfig()
+    const application = await setupApplication(runtimeConfig)
+    await maybeRunPluginDiscovery(application, { runtimeConfig, confirmPluginInstall: options?.confirmPluginInstall })
+    if (!options?.withoutServer) {
+        await startServer(application)
+    }
+    const pluginManager = await loadPlugins(application)
+    return { application, pluginManager }
+}
+
+export function getRuntimeConfig(): RuntimeConfig {
+    return {
         dbFilePath: process.env.DB_PATH,
+        discoverPlugins: process.env.STOREX_HUB_DISCOVER_PLUGINS,
+    }
+}
+
+export async function setupApplication(runtimeConfig?: RuntimeConfig) {
+    const application = new Application(getApplicationDependencies({
+        dbFilePath: runtimeConfig?.dbFilePath,
     }))
     await application.setup()
     return application
 }
 
-async function maybeRunPluginDiscovery(application: Application) {
-    if (!process.env.STOREX_HUB_DISCOVER_PLUGINS) {
-        return
-    }
-
-    const patternOrTrue = process.env.STOREX_HUB_DISCOVER_PLUGINS
-    if (patternOrTrue.toLowerCase() === 'false') {
+async function maybeRunPluginDiscovery(application: Application, options?: {
+    runtimeConfig?: RuntimeConfig
+    confirmPluginInstall?: PluginInstallConfirmer,
+}) {
+    const patternOrTrue = options?.runtimeConfig?.discoverPlugins
+    if (!patternOrTrue || patternOrTrue.toLowerCase() === 'false') {
         return
     }
 
     await discoverInstalledPlugins(application, {
         nodeModulesPath: join(process.cwd(), 'node_modules'),
-        pluginDirGlob: patternOrTrue.toLowerCase() !== 'true' ? patternOrTrue : undefined
+        pluginDirGlob: patternOrTrue.toLowerCase() !== 'true' ? patternOrTrue : undefined,
+        confirmPluginInstall: options?.confirmPluginInstall,
     })
 
     // TODO: Don't know why yet, but added plugins do not immediately get stored
@@ -50,6 +71,7 @@ async function loadPlugins(application: Application) {
         pluginManagementStorage: storage.systemModules.plugins,
     })
     await pluginManager.setup(() => application.api())
+    return pluginManager
 }
 
 export async function startServer(application: Application) {
