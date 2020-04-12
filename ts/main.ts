@@ -1,3 +1,4 @@
+import { join } from 'path';
 import cryptoRandomString from 'crypto-random-string'
 import { StorageBackend } from "@worldbrain/storex";
 import { DexieStorageBackend } from '@worldbrain/storex-backend-dexie'
@@ -6,12 +7,74 @@ import { TypeORMStorageBackend } from "@worldbrain/storex-backend-typeorm";
 import { Application, ApplicationOptions } from "./application";
 import { BcryptAccessTokenManager } from "./access-tokens";
 import { createHttpServer } from "./server";
+import { PluginManager } from './plugins/manager';
+import { discoverInstalledPlugins } from './plugins/discovery/main';
+import { PluginInstallConfirmer } from './plugins/discovery';
 
-export async function main() {
-    const application = new Application(getApplicationDependencies({
+export interface RuntimeConfig {
+    dbFilePath?: string
+    discoverPlugins?: string
+}
+
+export async function main(options?: {
+    runtimeConfig?: RuntimeConfig,
+    confirmPluginInstall?: PluginInstallConfirmer,
+    withoutServer?: boolean
+}) {
+    const runtimeConfig = options?.runtimeConfig ?? getRuntimeConfig()
+    const application = await setupApplication(runtimeConfig)
+    await maybeRunPluginDiscovery(application, { runtimeConfig, confirmPluginInstall: options?.confirmPluginInstall })
+    if (!options?.withoutServer) {
+        await startServer(application)
+    }
+    const pluginManager = await loadPlugins(application)
+    return { application, pluginManager }
+}
+
+export function getRuntimeConfig(): RuntimeConfig {
+    return {
         dbFilePath: process.env.DB_PATH,
+        discoverPlugins: process.env.STOREX_HUB_DISCOVER_PLUGINS,
+    }
+}
+
+export async function setupApplication(runtimeConfig?: RuntimeConfig) {
+    const application = new Application(getApplicationDependencies({
+        dbFilePath: runtimeConfig?.dbFilePath,
     }))
     await application.setup()
+    return application
+}
+
+async function maybeRunPluginDiscovery(application: Application, options?: {
+    runtimeConfig?: RuntimeConfig
+    confirmPluginInstall?: PluginInstallConfirmer,
+}) {
+    const patternOrTrue = options?.runtimeConfig?.discoverPlugins
+    if (!patternOrTrue || patternOrTrue.toLowerCase() === 'false') {
+        return
+    }
+
+    await discoverInstalledPlugins(application, {
+        nodeModulesPath: join(process.cwd(), 'node_modules'),
+        pluginDirGlob: patternOrTrue.toLowerCase() !== 'true' ? patternOrTrue : undefined,
+        confirmPluginInstall: options?.confirmPluginInstall,
+    })
+
+    // TODO: Don't know why yet, but added plugins do not immediately get stored
+    await new Promise(resolve => setTimeout(resolve, 1000))
+}
+
+async function loadPlugins(application: Application) {
+    const storage = await application.storage
+    const pluginManager = new PluginManager({
+        pluginManagementStorage: storage.systemModules.plugins,
+    })
+    await pluginManager.setup(() => application.api())
+    return pluginManager
+}
+
+export async function startServer(application: Application) {
     const server = await createHttpServer(application, {
         secretKey: 'very secret key'
     })
@@ -19,6 +82,7 @@ export async function main() {
     const port = getPortNumber()
     await server.start({ port })
     console.log(`Server started at http://localhost:${port}`)
+    return server
 }
 
 function getPortNumber(): number {
