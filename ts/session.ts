@@ -2,10 +2,10 @@ import * as api from "./public-api";
 import TypedEmitter from 'typed-emitter'
 import { AccessTokenManager } from "./access-tokens";
 import { Storage } from "./storage/types";
-import { AppSchema } from "./types/apps";
 import { EventEmitter } from "events";
 import { StorexHubCallbacks_v0, AllStorexHubCallbacks_v0 } from "./public-api";
 import { SingleArgumentOf, UnwrapPromise } from "./types/utils";
+import { AppSchema } from "@worldbrain/storex-hub-interfaces/lib/apps";
 
 export interface SessionOptions {
     accessTokenManager: AccessTokenManager

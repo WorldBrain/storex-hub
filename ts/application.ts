@@ -19,7 +19,8 @@ export interface ApplicationApiOptions {
     callbacks?: AllStorexHubCallbacks_v0
 }
 export class Application {
-    private storage: Promise<Storage>
+    public storage: Promise<Storage>
+
     private remoteSessions: { [identifier: string]: AllStorexHubCallbacks_v0 } = {}
     private appEvents: { [identifier: string]: EventEmitter } = {}
     private events = new EventEmitter() as TypedEmitter<{
@@ -81,7 +82,7 @@ export class Application {
 
                 if (request.type === 'app-availability-changed') {
                     const handler = (event: { app: string, availability: boolean }) => {
-                        options?.callbacks?.handleEvent?.({
+                        return options?.callbacks?.handleEvent?.({
                             event: {
                                 type: 'app-availability-changed',
                                 ...event,
@@ -107,7 +108,7 @@ export class Application {
                 await subscription.unsubscribe()
                 delete subscriptions[subscriptionId]
             },
-            emitEvent: async ({ event }) => {
+            emitEvent: async ({ event, synchronous }) => {
                 if (!session.identifiedApp) {
                     throw new Error('Cannot emit event if not identified')
                 }
@@ -117,10 +118,16 @@ export class Application {
                     throw new Error(`App ${session.identifiedApp.identifier} is not a remote app`)
                 }
 
-                appEvents.emit(event.type, {
-                    ...event,
-                    app: session.identifiedApp.identifier
-                })
+                if (synchronous) {
+                    await Promise.all(appEvents.listeners(event.type).map(handler => {
+                        return handler({ ...event, app: session.identifiedApp!.identifier })
+                    }))
+                } else {
+                    appEvents.emit(event.type, {
+                        ...event,
+                        app: session.identifiedApp.identifier
+                    })
+                }
             },
             destroySession: async () => {
                 if (session.identifiedApp) {
@@ -168,7 +175,7 @@ export async function subsribeToRemoteEvent(request: RemoteSubscriptionRequest_v
     }
 
     const handler = (event: ClientEvent) => {
-        options.handleEvent?.({ event })
+        return options.handleEvent?.({ event })
     }
     appEvents.addListener(request.type, handler)
 

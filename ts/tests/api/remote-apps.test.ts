@@ -1,4 +1,3 @@
-import createResolvable, { Resolvable } from '@josephg/resolvable'
 import expect = require("expect");
 import StorageManager from "@worldbrain/storex";
 import { DexieStorageBackend } from '@worldbrain/storex-backend-dexie'
@@ -38,7 +37,9 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         })
     })
 
-    async function setupChangeEventTest(createSession: TestSetup<MultiApiOptions, true>['createSession']) {
+    async function setupChangeEventTest(createSession: TestSetup<MultiApiOptions, true>['createSession'], testOptions?: {
+        testSynchronous?: boolean
+    }) {
         const collectionsToWatch = new Set<string>()
 
         const backend = new DexieStorageBackend({ dbName: 'memex', idbImplementation: inMemory() })
@@ -83,7 +84,10 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
             storageManager: memexStorageManager,
             shouldWatchCollection: collection => collectionsToWatch.has(collection),
             postprocessOperation: async context => {
-                await memex.emitEvent({ event: { type: 'storage-change', info: context.info } })
+                await memex.emitEvent({
+                    event: { type: 'storage-change', info: context.info },
+                    synchronous: testOptions?.testSynchronous
+                })
             }
         })
         await memexStorageManager.finishInitialization()
@@ -95,8 +99,18 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         const { api: backupApp } = await createSession({
             type: 'websocket',
             callbacks: {
-                handleEvent: async (options) => {
-                    events.push(options.event)
+                handleEvent: (options) => {
+                    const push = () => { events.push(options.event) }
+                    if (testOptions?.testSynchronous) {
+                        return new Promise(resolve => {
+                            setTimeout(() => {
+                                push()
+                                resolve()
+                            }, 20)
+                        })
+                    } else {
+                        return Promise.resolve(push())
+                    }
                 }
             }
         })
@@ -148,6 +162,35 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
                 },
             },
         ];
+        expect(events).toEqual(expectedEvents)
+    })
+
+    it('should be able to let remote apps signal changes to their local storage and wait for all handlers to resolve', async ({ createSession }) => {
+        const { memexStorageManager, events } = await setupChangeEventTest(createSession, {
+            testSynchronous: true
+        })
+
+        await memexStorageManager.collection('tags').createObject({
+            url: 'foo.com/test',
+            name: 'bla'
+        })
+
+        const expectedEvents: ClientEvent[] = [
+            {
+                type: 'storage-change',
+                app: 'memex',
+                info: {
+                    changes: [
+                        {
+                            type: "create",
+                            collection: "tags",
+                            pk: ['bla', 'foo.com/test'],
+                            values: {},
+                        },
+                    ],
+                },
+            },
+        ]
         expect(events).toEqual(expectedEvents)
     })
 

@@ -1,3 +1,1 @@
-export * from './server'
-export * from './client'
-export * from './common'
+export * from '@worldbrain/storex-hub-interfaces/lib/api'
