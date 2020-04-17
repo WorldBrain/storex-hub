@@ -33,6 +33,7 @@ export async function createAppStorage(options: {
         storageManager.registry.registerCollections(appSchema.schema.collectionDefinitions)
     }
     await storageManager.finishInitialization()
+    await storageManager.backend.migrate()
 
     return storageManager
 }
