@@ -18,7 +18,7 @@
     "@types/koa-session": "^5.10.1",
     "@worldbrain/storex": "^0.4.1",
     "@worldbrain/storex-backend-dexie": "^0.3.1",
-    "@worldbrain/storex-backend-typeorm": "^0.2.0",
+    "@worldbrain/storex-backend-typeorm": "^0.2.1",
     "@worldbrain/storex-middleware-change-watcher": "^0.1.1",
     "@worldbrain/storex-pattern-modules": "^0.4.0",
     "bcrypt": "^4.0.1",

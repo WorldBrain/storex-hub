@@ -201,7 +201,10 @@ export class Session implements api.StorexHubApi_v0 {
             }
         }
         const newSettings = options.keys === 'all' ? {} : omit(existingSettings, options.keys)
+        console.log('update settings')
         await storage.systemModules.apps.setAppSettings(this.identifiedApp.id as number, newSettings)
+        await storage.manager.collection('appSettingsObject').findObjects({})
+        console.log('update successful')
 
         return { status: 'success' }
     }

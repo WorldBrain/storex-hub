@@ -109,7 +109,8 @@ export class AppStorage extends StorageModule {
     async getAppSchemas(): Promise<Array<{ schema: AppSchema }>> {
         const jsonReviver = extendedJSONReviver({ withDates: true })
 
-        return (await this.operation('getAllSchemas', {})).map((schemaObject: { schema: string }) => ({
+        const schemaObjects = await this.operation('getAllSchemas', {});
+        return schemaObjects.map((schemaObject: { schema: string }) => ({
             schema: JSON.parse(schemaObject.schema, jsonReviver)
         }))
     }
@@ -126,6 +127,7 @@ export class AppStorage extends StorageModule {
         return object ? object.settings : null
     }
 
+    // debug = true
     async setAppSettings(appId: number, settings: { [key: string]: AppSettingValue }) {
         const object = await this.operation('findSettings', { appId })
         if (object) {

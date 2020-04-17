@@ -65,8 +65,12 @@ export class Application {
                 return this.appStorageManagers[appId]
             },
             updateStorage: async (identifiedApp) => {
-                const currentStorage = await this.storage
-                await this.options.closeStorageBackend(currentStorage.manager.backend, {
+                const appStorage = this.appStorageManagers[identifiedApp.id]
+                if (!appStorage) {
+                    return
+                }
+
+                await this.options.closeStorageBackend(appStorage.manager.backend, {
                     appIdentifier: identifiedApp.identifier,
                 })
                 delete this.appStorageManagers[identifiedApp.id]

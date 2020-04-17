@@ -47,19 +47,23 @@ export async function withTestApplication(body: (appliication: Application) => P
     let cleanup: (() => Promise<void>) | undefined
     if (options?.storageBackend === 'typeorm') {
         const dbDirectory = tempy.directory()
+        // console.log({ dbDirectory })
         cleanup = async () => {
-            await del(dbDirectory)
+            await del(dbDirectory, { force: true })
         }
 
         applicationDependencies = {
             accessTokenManager: new DevelopmentAccessTokenManager({ tokenGenerator: sequentialTokenGenerator() }),
-            createStorageBackend: (backendOptions) => new TypeORMStorageBackend({
-                connectionOptions: {
-                    type: 'sqlite',
-                    database: path.join(dbDirectory, backendOptions.appIdentifier),
-                    name: `connection-${++storageBackendsCreated}`,
-                },
-            }),
+            createStorageBackend: (backendOptions) => {
+                return new TypeORMStorageBackend({
+                    connectionOptions: {
+                        type: 'sqlite',
+                        database: path.join(dbDirectory, `${backendOptions.appIdentifier}.sqlite3`),
+                        name: `connection-${++storageBackendsCreated}`,
+                        // logging: true,
+                    },
+                })
+            },
             closeStorageBackend: async (storageBackend: StorageBackend) => {
                 await (storageBackend as TypeORMStorageBackend).connection?.close?.()
             },
@@ -77,7 +81,7 @@ export async function withTestApplication(body: (appliication: Application) => P
                 })
             },
             closeStorageBackend: async (storageBackend: StorageBackend) => {
-                // await (storageBackend as DexieStorageBackend).dexieInstance.close()
+                await (storageBackend as DexieStorageBackend).dexieInstance.close()
             },
         }
     }
@@ -86,7 +90,7 @@ export async function withTestApplication(body: (appliication: Application) => P
     try {
         await body(application)
     } finally {
-        await cleanup?.()
+        // await cleanup?.()
     }
 }
 
@@ -179,7 +183,7 @@ export function createWebsocketTestFactory(options?: { storageBackend: TestAppli
                         socket.disconnect()
                     }
                 }
-            })
+            }, options)
         }))
     }
     return factory
