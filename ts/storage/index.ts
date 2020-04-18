@@ -26,10 +26,13 @@ export async function createAppStorage(options: {
     storage: Storage,
     storageBackend: StorageBackend,
     appId: number
-}) {
+}): Promise<StorageManager | null> {
     const storageManager = new StorageManager({ backend: options.storageBackend })
     const appSchema = await options.storage.systemModules.apps.getAppSchema(options.appId)
-    if (appSchema?.schema) {
+    if (!appSchema) {
+        return null
+    }
+    if (appSchema.schema.collectionDefinitions) {
         storageManager.registry.registerCollections(appSchema.schema.collectionDefinitions)
     }
     await storageManager.finishInitialization()

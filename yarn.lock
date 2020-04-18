@@ -5248,7 +5248,11 @@ typed-emitter@^0.2.0:
   resolved "https://registry.yarnpkg.com/typed-emitter/-/typed-emitter-0.2.0.tgz#ede9a20a3aa78cb853c2866ddad968a3925830e1"
   integrity sha512-bq2aUggcZW+YM2wUHVLzGJ2Zvxr63oM6CJJXwioy3xIWyRWr7cmph4iSEZPWX67+qpMKETZQc0Bp55FwcNCmXg==
 
+<<<<<<< HEAD
 typeorm@^0.2.17:
+=======
+typeorm@~0.2.24:
+>>>>>>> Safer executeOperation()
   version "0.2.24"
   resolved "https://registry.yarnpkg.com/typeorm/-/typeorm-0.2.24.tgz#cd0fbd907326873a96c98e290fca49c589f0ffa8"
   integrity sha512-L9tQv6nNLRyh+gex/qc8/CyLs8u0kXKqk1OjYGF13k/KOg6N2oibwkuGgv0FuoTGYx2ta2NmqvuMUAMrHIY5ew==
@@ -5637,7 +5641,11 @@ yargs@^13.2.1:
     y18n "^4.0.0"
     yargs-parser "^13.1.2"
 
+<<<<<<< HEAD
 yargs@^15.0.0, yargs@^15.3.1:
+=======
+yargs@^15.0.0:
+>>>>>>> Safer executeOperation()
   version "15.3.1"
   resolved "https://registry.yarnpkg.com/yargs/-/yargs-15.3.1.tgz#9505b472763963e54afe60148ad27a330818e98b"
   integrity sha512-92O1HWEjw27sBfgmXiixJWT5hRBp2eobqXicLtPBIDBhYB+1HpwZlXmbW2luivBJHBzki+7VyCLRtAkScbTBQA==
