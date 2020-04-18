@@ -53,16 +53,23 @@ export class Application {
             getStorage: () => this.storage,
             getAppStorage: async (identifiedApp) => {
                 const appId = identifiedApp.id
-                if (!this.appStorageManagers[appId]) {
-                    this.appStorageManagers[appId] = createAppStorage({
-                        storage: await this.storage,
-                        storageBackend: this.options.createStorageBackend({
-                            appIdentifier: identifiedApp.identifier
-                        }),
-                        appId: appId as number,
-                    })
+                if (this.appStorageManagers[appId]) {
+                    return this.appStorageManagers[appId]
                 }
-                return this.appStorageManagers[appId]
+
+                const appStorage = createAppStorage({
+                    storage: await this.storage,
+                    storageBackend: this.options.createStorageBackend({
+                        appIdentifier: identifiedApp.identifier
+                    }),
+                    appId: appId as number,
+                })
+                if (!appStorage) {
+                    return null
+                }
+
+                this.appStorageManagers[appId] = appStorage
+                return appStorage
             },
             updateStorage: async (identifiedApp) => {
                 const appStorage = this.appStorageManagers[identifiedApp.id]

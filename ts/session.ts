@@ -13,7 +13,7 @@ import StorageManager from "@worldbrain/storex";
 export interface SessionOptions {
     accessTokenManager: AccessTokenManager
     getStorage: () => Promise<Storage>
-    getAppStorage: (identifiedApp: IdentifiedApp) => Promise<StorageManager>
+    getAppStorage: (identifiedApp: IdentifiedApp) => Promise<StorageManager | null>
     updateStorage: (identifiedApp: IdentifiedApp) => Promise<void>
 
     // executeCallback: <MethodName extends keyof StorexHubCallbacks_v0>(
@@ -93,13 +93,16 @@ export class Session implements api.StorexHubApi_v0 {
         }
     }
 
-    async executeOperation(options: { operation: any[] }): Promise<{ result: any }> {
+    async executeOperation(options: api.ExecuteOperationOptions_v0): Promise<api.ExecuteOperationResult_v0> {
         if (!this.identifiedApp) {
             throw new Error(`Operation executed without app identification`)
         }
         const appStorage = await this.options.getAppStorage(this.identifiedApp)
+        if (!appStorage) {
+            return { status: 'no-schema-found' }
+        }
 
-        return { result: await appStorage.operation(options.operation[0], ...options.operation.slice(1)) }
+        return { status: 'success', result: await appStorage.operation(options.operation[0], ...options.operation.slice(1)) }
     }
 
     async updateSchema(options: { schema: AppSchema }): Promise<api.UpdateSchemaResult_v0> {

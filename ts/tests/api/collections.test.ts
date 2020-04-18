@@ -19,23 +19,29 @@ export default createApiTestSuite('Collection registration and data operations',
             success: true,
         })
 
-        const { result: createResult } = await app.executeOperation({
+        const createResponse = await app.executeOperation({
             operation: ['createObject', 'user', {
                 email: 'john@doe.com',
             }]
         })
-        expect(createResult).toEqual({
-            object: {
-                id: (expect as any).anything(),
-                email: 'john@doe.com',
+        expect(createResponse).toEqual({
+            status: 'success',
+            result: {
+                object: {
+                    id: (expect as any).anything(),
+                    email: 'john@doe.com',
+                }
             }
         })
 
-        const { result: fieldResult } = await app.executeOperation({ operation: ['findObjects', 'user', {}] })
-        expect(fieldResult).toEqual([{
-            id: createResult.object.id,
-            email: 'john@doe.com',
-        }])
+        const fieldResponse = await app.executeOperation({ operation: ['findObjects', 'user', {}] })
+        expect(fieldResponse).toEqual({
+            status: 'success',
+            result: [{
+                id: (createResponse as any).result.object.id,
+                email: 'john@doe.com',
+            }]
+        })
     })
 
     it('should not allow the creation of collections with invalid names', async ({ createSession }) => {
