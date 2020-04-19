@@ -5,6 +5,7 @@
   "main": "lib/main.js",
   "scripts": {
     "start": "ts-node ts/main.ts",
+    "cli": "ts-node ts/cli/main.ts",
     "prepare": "tsc",
     "prepare:watch": "npm run prepare -- -w",
     "test": "mocha --require ts-node/register \"ts/**/*.test.ts\"",
@@ -39,7 +40,8 @@
     "supertest": "^4.0.2",
     "tempy": "^0.5.0",
     "typeorm": "~0.2.24",
-    "uuid": "^3.4.0"
+    "uuid": "^3.4.0",
+    "yargs": "^15.3.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^3.0.0",

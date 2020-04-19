@@ -9,9 +9,12 @@ import { StorexHubCallbacks_v0, AllStorexHubCallbacks_v0 } from "./public-api";
 import { SingleArgumentOf, UnwrapPromise } from "./types/utils";
 import { AppSchema } from "@worldbrain/storex-hub-interfaces/lib/apps";
 import StorageManager from "@worldbrain/storex";
+import { PluginManager } from './plugins/manager';
+import { getPluginInfo } from './plugins/utils';
 
 export interface SessionOptions {
     accessTokenManager: AccessTokenManager
+    pluginManager: PluginManager
     getStorage: () => Promise<Storage>
     getAppStorage: (identifiedApp: IdentifiedApp) => Promise<StorageManager | null>
     updateStorage: (identifiedApp: IdentifiedApp) => Promise<void>
@@ -168,7 +171,11 @@ export class Session implements api.StorexHubApi_v0 {
         }
 
         const storage = await this.options.getStorage()
-        const existingSettings = await storage.systemModules.apps.getAppSettings(this.identifiedApp.id as number)
+        let appId = options.app
+            ? (await storage.systemModules.apps.getApp(options.app)).id
+            : this.identifiedApp.id as number
+
+        const existingSettings = await storage.systemModules.apps.getAppSettings(appId)
         const settings = options.keys === 'all'
             ? existingSettings || {}
             : pick(existingSettings || {}, options.keys)
@@ -182,9 +189,13 @@ export class Session implements api.StorexHubApi_v0 {
         }
 
         const storage = await this.options.getStorage()
-        const existingSettings = await storage.systemModules.apps.getAppSettings(this.identifiedApp.id as number)
+        let appId = options.app
+            ? (await storage.systemModules.apps.getApp(options.app)).id
+            : this.identifiedApp.id as number
+
+        const existingSettings = await storage.systemModules.apps.getAppSettings(appId)
         const newSettings = { ...(existingSettings || {}), ...options.updates }
-        await storage.systemModules.apps.setAppSettings(this.identifiedApp.id as number, newSettings)
+        await storage.systemModules.apps.setAppSettings(appId, newSettings)
 
         return { status: 'success' }
     }
@@ -195,7 +206,11 @@ export class Session implements api.StorexHubApi_v0 {
         }
 
         const storage = await this.options.getStorage()
-        const existingSettings = await storage.systemModules.apps.getAppSettings(this.identifiedApp.id as number)
+        let appId = options.app
+            ? (await storage.systemModules.apps.getApp(options.app)).id
+            : this.identifiedApp.id as number
+
+        const existingSettings = await storage.systemModules.apps.getAppSettings(appId)
         if (!existingSettings) {
             if (options.keys === 'all') {
                 return { status: 'success' }
@@ -204,12 +219,28 @@ export class Session implements api.StorexHubApi_v0 {
             }
         }
         const newSettings = options.keys === 'all' ? {} : omit(existingSettings, options.keys)
-        console.log('update settings')
-        await storage.systemModules.apps.setAppSettings(this.identifiedApp.id as number, newSettings)
+        await storage.systemModules.apps.setAppSettings(appId, newSettings)
         await storage.manager.collection('appSettingsObject').findObjects({})
-        console.log('update successful')
 
         return { status: 'success' }
+    }
+
+    inspectPlugin: api.StorexHubApi_v0['inspectPlugin'] = async options => {
+        throw new Error(`Not implementeed`)
+    }
+
+    installPlugin: api.StorexHubApi_v0['installPlugin'] = async options => {
+        const maybePluginInfo = await getPluginInfo(options.location)
+        if (maybePluginInfo.status !== 'success') {
+            return maybePluginInfo
+        }
+        const pluginInfo = maybePluginInfo.pluginInfo
+
+        return this.options.pluginManager.installPlugin(pluginInfo, { location: options.location })
+    }
+
+    removePlugin: api.StorexHubApi_v0['removePlugin'] = async options => {
+        throw new Error(`Not implementeed`)
     }
 }
 

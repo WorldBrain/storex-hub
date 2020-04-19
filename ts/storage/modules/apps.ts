@@ -77,7 +77,7 @@ export class AppStorage extends StorageModule {
                     args: { app: '$appId:pk' },
                 },
                 updateSettings: {
-                    operation: 'updateObject',
+                    operation: 'updateObjects',
                     collection: 'appSettingsObject',
                     args: [
                         { app: '$appId:pk' },
@@ -131,7 +131,6 @@ export class AppStorage extends StorageModule {
         return object ? object.settings : null
     }
 
-    // debug = true
     async setAppSettings(appId: number, settings: { [key: string]: AppSettingValue }) {
         const object = await this.operation('findSettings', { appId })
         if (object) {
