@@ -9,6 +9,7 @@ import { createStorage, createAppStorage } from "./storage";
 import { SingleArgumentOf } from "./types/utils";
 import { EventEmitter } from "events";
 import { isRemoteSubscriptionRequest } from './public-api/utils';
+import { PluginManager } from './plugins/manager';
 
 export interface ApplicationOptions {
     accessTokenManager: AccessTokenManager
@@ -20,6 +21,7 @@ export interface ApplicationApiOptions {
 }
 export class Application {
     public storage: Promise<Storage>
+    public pluginManager: PluginManager
     private appStorageManagers: { [appId: number]: Promise<StorageManager> } = {}
 
     private remoteSessions: { [identifier: string]: AllStorexHubCallbacks_v0 } = {}
@@ -34,10 +36,22 @@ export class Application {
                 appIdentifier: '_system'
             })
         })
+        this.pluginManager = new PluginManager({
+            createApi: async (identifier) => {
+                const session = await this.api() as Session
+                const app = await (await this.storage).systemModules.apps.getApp(identifier)
+                if (app) {
+                    session.identifiedApp = { id: app.id, identifier }
+                    return session
+                }
+                await session.registerApp({ name: identifier, identify: true })
+                return session
+            }
+        })
     }
 
     async setup() {
-
+        await this.pluginManager.setup((await this.storage).systemModules.plugins)
     }
 
     async api(options?: ApplicationApiOptions): Promise<StorexHubApi_v0> {
@@ -50,6 +64,7 @@ export class Application {
 
         const session = new Session({
             accessTokenManager: this.options.accessTokenManager,
+            pluginManager: this.pluginManager,
             getStorage: () => this.storage,
             getAppStorage: async (identifiedApp) => {
                 const appId = identifiedApp.id

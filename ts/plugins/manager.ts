@@ -1,54 +1,78 @@
+import path from 'path'
 import { PluginManagementStorage } from "./storage";
 import { PluginInfo, PluginEntryFunction, PluginInterface } from "@worldbrain/storex-hub-interfaces/lib/plugins";
-import { StorexHubApi_v0 } from "../public-api";
+import { StorexHubApi_v0, PluginLoadError_v0, InstallPluginResult_v0 } from "../public-api";
 
 export class PluginManager {
     loadedPlugins: { [identifier: string]: PluginInterface } = {}
+    private pluginStorage!: PluginManagementStorage
 
     constructor(private options: {
-        pluginManagementStorage: PluginManagementStorage
+        createApi: (appIdentifer: string) => Promise<StorexHubApi_v0>
     }) {
 
     }
 
-    async setup(createAPI: () => Promise<StorexHubApi_v0>) {
-        const enabledPlugins = await this.options.pluginManagementStorage.getInfoForEnabledPlugins()
+    async setup(pluginStorage: PluginManagementStorage) {
+        this.pluginStorage = pluginStorage
+        const enabledPlugins = await pluginStorage.getInfoForEnabledPlugins()
+
         for (const pluginInfo of enabledPlugins) {
             (async () => {
-                const plugin = await this._loadPlugin(pluginInfo, createAPI)
-                if (!plugin) {
-                    return
-                }
-
-                await plugin.start()
+                await this._loadPlugin(pluginInfo)
             })()
         }
     }
 
-    async _loadPlugin(pluginInfo: PluginInfo, createAPI: () => Promise<StorexHubApi_v0>): Promise<PluginInterface | null> {
+    async installPlugin(pluginInfo: PluginInfo, options: { location: string }): Promise<InstallPluginResult_v0> {
+        const existingPluginInfo = await this.pluginStorage.getPluginInfoByIdentifier(pluginInfo.identifier)
+        if (existingPluginInfo) {
+            return { status: 'already-installed' }
+        }
+        await this.pluginStorage.addPlugin(pluginInfo, { path: options.location })
+        pluginInfo.mainPath = path.join(options.location, pluginInfo.mainPath)
+
+        const loadResult = await this._loadPlugin(pluginInfo)
+        if (loadResult.status !== 'success') {
+            return { status: 'installed-but-errored', error: loadResult }
+        }
+
+        return { status: 'success' }
+    }
+
+    async _loadPlugin(pluginInfo: PluginInfo): Promise<{ status: 'success' } | PluginLoadError_v0> {
         let pluginModule: any
         try {
             pluginModule = require(pluginInfo.mainPath)
         } catch (e) {
             console.error(`ERROR - Could not require plugin ${pluginInfo.identifier} at path ${pluginInfo.mainPath}:`)
             console.error(e)
-            return null
+            return { status: 'plugin-require-failed' }
         }
 
         const entryFunction: PluginEntryFunction = pluginModule[pluginInfo.entryFunction]
         if (!entryFunction) {
             console.error(`ERROR - Could not find entry function '${pluginInfo.entryFunction}' in plugin ${pluginInfo.identifier}`)
-            return null
+            return { status: 'missing-entry-function', entryFunction: pluginInfo.entryFunction }
         }
 
+        let plugin: PluginInterface
         try {
-            this.loadedPlugins[pluginInfo.identifier] = await entryFunction({ api: await createAPI() })
+            plugin = this.loadedPlugins[pluginInfo.identifier] = await entryFunction({
+                getApi: () => this.options.createApi(pluginInfo.identifier),
+            })
         } catch (e) {
             console.error(`ERROR during initialization plugin '${pluginInfo.identifier}':`)
             console.error(e)
-            return null
+            return { status: 'entry-function-failed' }
         }
 
-        return this.loadedPlugins[pluginInfo.identifier]
+        try {
+            await plugin.start()
+            return { status: 'success' }
+        } catch (e) {
+            console.error(e)
+            return { status: 'start-failed' }
+        }
     }
 }
