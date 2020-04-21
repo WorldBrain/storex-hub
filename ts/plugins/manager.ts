@@ -1,14 +1,14 @@
 import path from 'path'
 import { PluginManagementStorage } from "./storage";
 import { PluginInfo, PluginEntryFunction, PluginInterface } from "@worldbrain/storex-hub-interfaces/lib/plugins";
-import { StorexHubApi_v0, PluginLoadError_v0, InstallPluginResult_v0 } from "../public-api";
+import { StorexHubApi_v0, PluginLoadError_v0, InstallPluginResult_v0, StorexHubCallbacks_v0 } from "../public-api";
 
 export class PluginManager {
     loadedPlugins: { [identifier: string]: PluginInterface } = {}
     private pluginStorage!: PluginManagementStorage
 
     constructor(private options: {
-        createApi: (appIdentifer: string) => Promise<StorexHubApi_v0>
+        createApi: (appIdentifer: string, options?: { callbacks?: StorexHubCallbacks_v0 }) => Promise<StorexHubApi_v0>
     }) {
 
     }
@@ -52,14 +52,14 @@ export class PluginManager {
 
         const entryFunction: PluginEntryFunction = pluginModule[pluginInfo.entryFunction]
         if (!entryFunction) {
-            console.error(`ERROR - Could not find entry function '${pluginInfo.entryFunction}' in plugin ${pluginInfo.identifier}`)
+            console.error(`ERROR - Could not find entry function '${pluginInfo.entryFunction}' in plugin ${pluginInfo.identifier}, file ${pluginInfo.mainPath}`)
             return { status: 'missing-entry-function', entryFunction: pluginInfo.entryFunction }
         }
 
         let plugin: PluginInterface
         try {
             plugin = this.loadedPlugins[pluginInfo.identifier] = await entryFunction({
-                getApi: () => this.options.createApi(pluginInfo.identifier),
+                getApi: options => this.options.createApi(pluginInfo.identifier, options),
             })
         } catch (e) {
             console.error(`ERROR during initialization plugin '${pluginInfo.identifier}':`)
@@ -69,6 +69,7 @@ export class PluginManager {
 
         try {
             await plugin.start()
+            console.log('Started plugin ' + pluginInfo.identifier)
             return { status: 'success' }
         } catch (e) {
             console.error(e)
