@@ -37,8 +37,8 @@ export class Application {
             })
         })
         this.pluginManager = new PluginManager({
-            createApi: async (identifier) => {
-                const session = await this.api() as Session
+            createApi: async (identifier, options) => {
+                const session = await this.api(options as any) as Session
                 const app = await (await this.storage).systemModules.apps.getApp(identifier)
                 if (app) {
                     session.identifiedApp = { id: app.id, identifier }
