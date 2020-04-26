@@ -10,7 +10,8 @@
     "prepare:watch": "npm run prepare -- -w",
     "test": "mocha --require ts-node/register \"ts/**/*.test.ts\"",
     "test:watch": "mocha -r source-map-support/register -r ts-node/register \"ts/**/*.test.ts\" --watch --watch-extensions ts",
-    "test:coverage": "rm -rf lib ; yarn prepare && nyc --reporter=html --reporter=text mocha 'lib/**/*.test.js'"
+    "test:coverage": "rm -rf lib ; yarn prepare && nyc --reporter=html --reporter=text mocha 'lib/**/*.test.js'",
+    "build": "./scripts/build.sh"
   },
   "keywords": [],
   "author": "Vincent den Boer",
@@ -22,6 +23,7 @@
     "@worldbrain/storex-backend-typeorm": "^0.2.1",
     "@worldbrain/storex-middleware-change-watcher": "^0.1.1",
     "@worldbrain/storex-pattern-modules": "^0.4.0",
+    "auto-launch": "^5.0.5",
     "bcrypt": "^4.0.1",
     "crypto-random-string": "^3.2.0",
     "fast-glob": "^3.2.2",
@@ -64,6 +66,7 @@
     "fake-fs": "^0.5.0",
     "mocha": "^4.0.1",
     "nyc": "^13.3.0",
+    "pkg": "^4.4.6",
     "sinon": "^4.1.2",
     "source-map-support": "0.5.16",
     "storex-hub-plugin-internal-selftest": "^0.0.2",

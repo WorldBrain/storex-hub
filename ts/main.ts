@@ -8,7 +8,6 @@ import { TypeORMStorageBackend } from "@worldbrain/storex-backend-typeorm";
 
 import { Application, ApplicationOptions } from "./application";
 import { BcryptAccessTokenManager } from "./access-tokens";
-
 import { createHttpServer } from "./server";
 
 export interface RuntimeConfig {
