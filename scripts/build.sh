@@ -29,13 +29,13 @@ for target in $targets; do
     if [ "$SKIP_BINDINGS" != "true" ]; then
         platform=${platform_by_target[$target]}
 
-        # ./node_modules/.bin/node-pre-gyp install \
-        #     --directory=./node_modules/sqlite3 \
-        #     --target_platform=${platform} \
-        #     --target_arch='x64' \
-        #     --target=${node_version:1}
+        ./node_modules/.bin/node-pre-gyp install \
+            --directory=./node_modules/sqlite3 \
+            --target_platform=${platform} \
+            --target_arch='x64' \
+            --target=${node_version:1}
 
-        # cp node_modules/sqlite3/lib/binding/node-v64-$platform-x64/node_sqlite3.node $output_dir
+        cp node_modules/sqlite3/lib/binding/node-v64-$platform-x64/node_sqlite3.node $output_dir
 
         ./node_modules/.bin/node-pre-gyp install \
             --directory=./node_modules/bcrypt \
