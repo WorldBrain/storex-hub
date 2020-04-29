@@ -4,6 +4,6 @@
   "description": "Plugin used during Storex Hub integration tests",
   "siteUrl": "https://github.com/WorldBrain/storex-hub/ts/tests/plugins/test-plugin",
   "apps": [],
-  "mainPath": "plugin",
+  "mainPath": "plugin.js",
   "entryFunction": "main"
 }

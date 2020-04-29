@@ -11,7 +11,8 @@ import { BcryptAccessTokenManager } from "./access-tokens";
 import { createHttpServer } from "./server";
 
 export interface RuntimeConfig {
-    dbFilePath?: string
+    dbPath?: string
+    pluginsDir?: string
 }
 
 export async function main(options?: {
@@ -28,14 +29,18 @@ export async function main(options?: {
 
 export function getRuntimeConfig(): RuntimeConfig {
     return {
-        dbFilePath: process.env.DB_PATH,
+        dbPath: process.env.DB_PATH,
+        pluginsDir: process.env.PLUGINS_DIR
     }
 }
 
 export async function setupApplication(runtimeConfig?: RuntimeConfig) {
-    const application = new Application(getApplicationDependencies({
-        dbFilePath: runtimeConfig?.dbFilePath,
-    }))
+    const application = new Application({
+        pluginsDir: runtimeConfig?.pluginsDir,
+        ...getApplicationDependencies({
+            dbFilePath: runtimeConfig?.dbPath,
+        })
+    })
     await application.setup()
     return application
 }
@@ -66,9 +71,13 @@ function getPortNumber(): number {
 }
 
 function getDBFilePath(configured: string, appIdentifier: string) {
+    if (!fs.existsSync(configured)) {
+        fs.mkdirSync(configured)
+    }
+
     const isDir = fs.statSync(configured).isDirectory()
     if (isDir) {
-        return path.join(configured, `appIdentifier.sqlite3`)
+        return path.join(configured, `${appIdentifier}.sqlite3`)
     }
     if (appIdentifier === '_system') {
         return configured

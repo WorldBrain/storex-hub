@@ -14,7 +14,7 @@ export async function standalone() {
 
     const dbFilePath = path.join(path.dirname(process.argv[0]), 'database')
 
-    await main({ runtimeConfig: { dbFilePath } })
+    await main({ runtimeConfig: { dbPath: dbFilePath } })
 }
 
 if (require.main === module) {
