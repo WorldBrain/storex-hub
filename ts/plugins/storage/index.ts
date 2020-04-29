@@ -6,7 +6,7 @@ import { PluginInfo } from '@worldbrain/storex-hub-interfaces/lib/plugins';
 export class PluginManagementStorage extends StorageModule {
     getConfig = (): StorageModuleConfig => ({
         collections: {
-            pluginInfo: {
+            pluginMetadata: {
                 version: STORAGE_VERSIONS[0],
                 fields: {
                     identifier: { type: 'string' },
@@ -20,16 +20,21 @@ export class PluginManagementStorage extends StorageModule {
         operations: {
             addPlugin: {
                 operation: 'createObject',
-                collection: 'pluginInfo',
+                collection: 'pluginMetadata',
             },
             getEnabledPlugins: {
                 operation: 'findObjects',
-                collection: 'pluginInfo',
+                collection: 'pluginMetadata',
                 args: { enabled: true },
+            },
+            getAllPlugins: {
+                operation: 'findObjects',
+                collection: 'pluginMetadata',
+                args: {},
             },
             findPluginByIdentifier: {
                 operation: 'findObject',
-                collection: 'pluginInfo',
+                collection: 'pluginMetadata',
                 args: { identifier: '$identifier' }
             }
         }
@@ -47,6 +52,11 @@ export class PluginManagementStorage extends StorageModule {
 
     async getPluginInfoByIdentifier(identifier: string) {
         return ((await this.operation('findPluginByIdentifier', { identifier })) || null)?.info
+    }
+
+    async getAllPluginMetadata(): Promise<any[]> {
+        const records: any[] = (await this.operation('getAllPlugins', {}))
+        return records
     }
 
     async getInfoForEnabledPlugins(): Promise<PluginInfo[]> {

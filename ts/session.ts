@@ -225,18 +225,16 @@ export class Session implements api.StorexHubApi_v0 {
         return { status: 'success' }
     }
 
+    listPlugins: api.StorexHubApi_v0['listPlugins'] = async () => {
+        return this.options.pluginManager.listPlugins()
+    }
+
     inspectPlugin: api.StorexHubApi_v0['inspectPlugin'] = async options => {
-        throw new Error(`Not implementeed`)
+        throw new Error(`Not implemented`)
     }
 
     installPlugin: api.StorexHubApi_v0['installPlugin'] = async options => {
-        const maybePluginInfo = await getPluginInfo(options.location)
-        if (maybePluginInfo.status !== 'success') {
-            return maybePluginInfo
-        }
-        const pluginInfo = maybePluginInfo.pluginInfo
-
-        return this.options.pluginManager.installPlugin(pluginInfo, { location: options.location })
+        return this.options.pluginManager.installPlugin(options)
     }
 
     removePlugin: api.StorexHubApi_v0['removePlugin'] = async options => {

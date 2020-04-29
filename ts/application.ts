@@ -15,6 +15,7 @@ export interface ApplicationOptions {
     accessTokenManager: AccessTokenManager
     createStorageBackend: (options: { appIdentifier: string }) => StorageBackend
     closeStorageBackend: (storageBackend: StorageBackend, options: { appIdentifier: string }) => Promise<void>
+    pluginsDir?: string
 }
 export interface ApplicationApiOptions {
     callbacks?: AllStorexHubCallbacks_v0
@@ -46,7 +47,8 @@ export class Application {
                 }
                 await session.registerApp({ name: identifier, identify: true })
                 return session
-            }
+            },
+            pluginsDir: this.options.pluginsDir,
         })
     }
 

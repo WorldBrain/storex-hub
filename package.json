@@ -64,6 +64,7 @@
     "chai": "^4.1.2",
     "expect": "^25.3.0",
     "fake-fs": "^0.5.0",
+    "fs-extra": "^9.0.0",
     "mocha": "^4.0.1",
     "nyc": "^13.3.0",
     "pkg": "^4.4.6",
@@ -72,6 +73,7 @@
     "storex-hub-plugin-internal-selftest": "^0.0.2",
     "ts-node": "^7.0.1",
     "typescript": "^3.7.5",
+    "@types/fs-extra": "^5.0.2",
     "@types/prompt-sync": "^4.1.0",
     "@worldbrain/storex-hub-interfaces": "^0.1.2"
   },
