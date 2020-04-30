@@ -5,6 +5,19 @@ import path from "path"
 import { copy } from "fs-extra"
 import expect from "expect"
 
+const listedPlugins = (status: string) => ({
+    status: 'success',
+    plugins: [
+        expect.objectContaining({
+            identifier: 'io.worldbrain.storex-hub.test-plugin'
+        })
+    ],
+    state: {
+        'io.worldbrain.storex-hub.test-plugin': {
+            status
+        }
+    }
+})
 
 describe('Plugins', () => {
     it('should correctly list plugins and install listed plugins by identifier', async () => {
@@ -22,19 +35,7 @@ describe('Plugins', () => {
             const location = path.join(__dirname, 'test-plugin')
             await copy(location, path.join(pluginDir, 'test-plugin'))
             const api = await application.api()
-            expect(await api.listPlugins()).toEqual({
-                status: 'success',
-                plugins: [
-                    expect.objectContaining({
-                        identifier: 'io.worldbrain.storex-hub.test-plugin'
-                    })
-                ],
-                state: {
-                    'io.worldbrain.storex-hub.test-plugin': {
-                        status: 'available'
-                    }
-                }
-            })
+            expect(await api.listPlugins()).toEqual(listedPlugins('available'))
             const installResponse = await api.installPlugin({
                 identifier: 'io.worldbrain.storex-hub.test-plugin'
             })
@@ -42,12 +43,13 @@ describe('Plugins', () => {
             expect(application.pluginManager.loadedPlugins).toEqual({
                 'io.worldbrain.storex-hub.test-plugin': expect.objectContaining({ running: true })
             })
+            expect(await api.listPlugins()).toEqual(listedPlugins('enabled'))
         } finally {
             del(dbPath, { force: true })
         }
     })
 
-    it('should correctly install new plugins', async () => {
+    it('should correctly install new plugins by filesystem location', async () => {
         const dbPath = tempy.directory()
         try {
             const { application } = await main({ withoutServer: true, runtimeConfig: { dbPath } })
@@ -58,6 +60,7 @@ describe('Plugins', () => {
             expect(application.pluginManager.loadedPlugins).toEqual({
                 'io.worldbrain.storex-hub.test-plugin': expect.objectContaining({ running: true })
             })
+            expect(await api.listPlugins()).toEqual(listedPlugins('enabled'))
         } finally {
             del(dbPath, { force: true })
         }
