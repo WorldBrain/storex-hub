@@ -44,6 +44,10 @@ export class PluginManager {
         }
 
         if (this.options.pluginsDir) {
+            if (!fs.existsSync(this.options.pluginsDir)) {
+                return result
+            }
+
             const pluginDirNames = fs.readdirSync(this.options.pluginsDir)
             for (const pluginDirName of pluginDirNames) {
                 const maybePluginInfo = await getPluginInfo(path.join(this.options.pluginsDir, pluginDirName))

@@ -15,6 +15,9 @@ export interface RuntimeConfig {
     pluginsDir?: string
 }
 
+// We need this to be global, so we can run multiple tests with this increasing
+let storageBackendsCreated = 0
+
 export async function main(options?: {
     runtimeConfig?: RuntimeConfig,
     withoutServer?: boolean
@@ -86,13 +89,12 @@ function getDBFilePath(configured: string, appIdentifier: string) {
     return path.join(path.dirname(configured), `${appIdentifier}.sqlite3`)
 }
 
-function getApplicationDependencies(options: { dbFilePath?: string }) {
+export function getApplicationDependencies(options: { dbFilePath?: string }) {
     let applicationDependencies: ApplicationOptions
     const accessTokenManager = new BcryptAccessTokenManager({
         tokenGenerator: async () => cryptoRandomString({ length: 24, type: 'base64' })
     })
 
-    let storageBackendsCreated = 0
     if (options.dbFilePath) {
         applicationDependencies = {
             accessTokenManager,
@@ -100,7 +102,7 @@ function getApplicationDependencies(options: { dbFilePath?: string }) {
                 connectionOptions: {
                     type: 'sqlite',
                     database: getDBFilePath(options.dbFilePath!, appIdentifier),
-                    name: `connection-${++storageBackendsCreated}`,
+                    name: `connection-main-${++storageBackendsCreated}`,
                 } as any,
             }),
             closeStorageBackend: async (storageBackend: StorageBackend) => {
