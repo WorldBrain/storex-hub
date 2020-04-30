@@ -1,5 +1,6 @@
 import path from 'path'
 import { main } from "./main";
+import { mkdirSync } from 'fs-extra';
 
 const AutoLaunch = require('auto-launch');
 
@@ -12,9 +13,14 @@ export async function standalone() {
         autoLauncher.enable()
     }
 
-    const dbFilePath = path.join(path.dirname(process.argv[0]), 'database')
+    const standaloneDirPath = path.dirname(process.argv[0])
+    const dbFilePath = path.join(standaloneDirPath, 'database')
+    const pluginsDir = path.join(standaloneDirPath, 'plugins')
+    try {
+        mkdirSync(pluginsDir)
+    } catch (e) { }
 
-    await main({ runtimeConfig: { dbPath: dbFilePath } })
+    await main({ runtimeConfig: { dbPath: dbFilePath, pluginsDir } })
 }
 
 if (require.main === module) {
