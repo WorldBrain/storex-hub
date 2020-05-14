@@ -165,6 +165,43 @@ export class Session implements api.StorexHubApi_v0 {
         }
     }
 
+    describeAppSettings: api.StorexHubApi_v0['describeAppSettings'] = async (options) => {
+        if (!this.identifiedApp) {
+            return { status: 'not-identified' }
+        }
+
+        const storage = await this.options.getStorage()
+        const appId = options.app
+            ? (await storage.systemModules.apps.getApp(options.app))?.id
+            : this.identifiedApp.id as number
+        if (!appId) {
+            return { status: 'app-not-found' }
+        }
+
+        await storage.systemModules.apps.setAppSettingsDescription(appId, options.description)
+
+        return { status: 'success' }
+    }
+
+    getAppSettingsDescription: api.StorexHubApi_v0['getAppSettingsDescription'] = async (options) => {
+        if (!this.identifiedApp) {
+            return { status: 'not-identified' }
+        }
+        const storage = await this.options.getStorage()
+        const appId = options.app
+            ? (await storage.systemModules.apps.getApp(options.app))?.id
+            : this.identifiedApp.id as number
+        if (!appId) {
+            return { status: 'app-not-found' }
+        }
+
+        const description = await storage.systemModules.apps.getAppSettingsDescription(appId)
+        if (!description) {
+            return { status: 'has-no-description' }
+        }
+        return { status: 'success', description }
+    }
+
     getAppSettings: api.StorexHubApi_v0['getAppSettings'] = async (options) => {
         if (!this.identifiedApp) {
             return { status: 'not-identified' }
@@ -230,7 +267,7 @@ export class Session implements api.StorexHubApi_v0 {
     }
 
     inspectPlugin: api.StorexHubApi_v0['inspectPlugin'] = async options => {
-        throw new Error(`Not implemented`)
+        return this.options.pluginManager.inspectPlugin(options)
     }
 
     installPlugin: api.StorexHubApi_v0['installPlugin'] = async options => {

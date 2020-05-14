@@ -1,17 +1,19 @@
 import * as path from 'path'
-import { existsSync, readFileSync } from 'fs'
+import * as fs from 'fs'
 import { InspectPluginError_v0 } from '@worldbrain/storex-hub-interfaces/lib/api'
 import { PluginInfo } from '@worldbrain/storex-hub-interfaces/lib/plugins'
 
-export async function getPluginInfo(location: string): Promise<InspectPluginError_v0 | { status: 'success', pluginInfo: PluginInfo }> {
+export async function getPluginInfo(location: string, fsModule?: Pick<typeof fs, 'existsSync' | 'readFileSync'>): Promise<InspectPluginError_v0 | { status: 'success', pluginInfo: PluginInfo }> {
+    fsModule = fsModule ?? fs
+
     const manifestPath = path.join(location, 'manifest.json')
-    if (!existsSync(manifestPath)) {
+    if (!fsModule.existsSync(manifestPath)) {
         return { status: 'not-found', location }
     }
 
     let manifestContent: string
     try {
-        manifestContent = readFileSync(manifestPath).toString()
+        manifestContent = fsModule.readFileSync(manifestPath).toString()
     } catch (e) {
         console.error(e)
         return { status: 'could-not-read', location }

@@ -1,3 +1,4 @@
+import * as fs from 'fs'
 import uuid from 'uuid/v4'
 import TypedEmitter from 'typed-emitter'
 import StorageManager, { StorageBackend } from "@worldbrain/storex";
@@ -16,6 +17,7 @@ export interface ApplicationOptions {
     createStorageBackend: (options: { appIdentifier: string }) => StorageBackend
     closeStorageBackend: (storageBackend: StorageBackend, options: { appIdentifier: string }) => Promise<void>
     pluginsDir?: string
+    fsModule?: typeof fs
 }
 export interface ApplicationApiOptions {
     callbacks?: AllStorexHubCallbacks_v0
@@ -49,6 +51,7 @@ export class Application {
                 return session
             },
             pluginsDir: this.options.pluginsDir,
+            fsModule: options.fsModule,
         })
     }
 

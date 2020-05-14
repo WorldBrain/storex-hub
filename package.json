@@ -32,8 +32,10 @@
     "koa": "^2.11.0",
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^8.0.6",
+    "koa-serve": "^0.1.7",
     "koa-session": "^5.12.3",
     "koa-socket-2": "^1.2.0",
+    "koa-static": "^5.0.0",
     "lodash": "^4.17.10",
     "prompt-sync": "^4.2.0",
     "sqlite3": "^4.1.1",
@@ -43,6 +45,7 @@
     "tempy": "^0.5.0",
     "typeorm": "~0.2.24",
     "uuid": "^3.4.0",
+    "uws": "10.148.1",
     "yargs": "^15.3.1"
   },
   "devDependencies": {

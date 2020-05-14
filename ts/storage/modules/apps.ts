@@ -3,6 +3,7 @@ import { AppSchema } from '@worldbrain/storex-hub-interfaces/lib/apps';
 import { AppSettingValue } from '@worldbrain/storex-hub-interfaces/lib/api/server';
 import STORAGE_VERSIONS from '../versions';
 import { extendedJSONReviver } from '../../utils/json';
+import { SettingsDescription } from '@worldbrain/storex-hub-interfaces/lib/settings';
 
 export class AppStorage extends StorageModule {
     getConfig(): StorageModuleConfig {
@@ -24,6 +25,15 @@ export class AppStorage extends StorageModule {
                     relationships: [
                         { singleChildOf: 'app' }
                     ]
+                },
+                appSettingsDescription: {
+                    version: STORAGE_VERSIONS[1],
+                    fields: {
+                        description: { type: 'json' },
+                    },
+                    relationships: [
+                        { childOf: 'app' }
+                    ],
                 },
                 appSettingsObject: {
                     version: STORAGE_VERSIONS[1],
@@ -66,6 +76,23 @@ export class AppStorage extends StorageModule {
                     operation: 'findObjects',
                     collection: 'appSchema',
                     args: {}
+                },
+                createSettingsDescription: {
+                    operation: 'createObject',
+                    collection: 'appSettingsDescription',
+                },
+                findSettingsDescription: {
+                    operation: 'findObject',
+                    collection: 'appSettingsDescription',
+                    args: { app: '$appId:pk' },
+                },
+                updateSettingsDescription: {
+                    operation: 'updateObjects',
+                    collection: 'appSettingsDescription',
+                    args: [
+                        { app: '$appId:pk' },
+                        { description: '$settingsDescription:json' }
+                    ],
                 },
                 createSettings: {
                     operation: 'createObject',
@@ -124,6 +151,20 @@ export class AppStorage extends StorageModule {
         }
 
         return { schema: JSON.parse(schemaObject.schema, jsonReviver) }
+    }
+
+    async getAppSettingsDescription(appId: number) {
+        const object = await this.operation('findSettingsDescription', { appId })
+        return object ? object.description : null
+    }
+
+    async setAppSettingsDescription(appId: number, description: SettingsDescription) {
+        const object = await this.operation('findSettingsDescription', { appId })
+        if (object) {
+            await this.operation('updateSettingsDescription', { appId, description })
+        } else {
+            await this.operation('createSettingsDescription', { app: appId, description })
+        }
     }
 
     async getAppSettings(appId: number) {

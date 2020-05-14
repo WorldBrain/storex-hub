@@ -1,20 +1,22 @@
 import fs from 'fs'
 import path from 'path'
-import glob from 'fast-glob'
 import { PluginManagementStorage } from "./storage";
 import { PluginInfo, PluginEntryFunction, PluginInterface } from "@worldbrain/storex-hub-interfaces/lib/plugins";
-import { StorexHubApi_v0, PluginLoadError_v0, InstallPluginResult_v0, StorexHubCallbacks_v0, ListPluginsResult_v0, InstallPluginOptions_v0 } from "../public-api";
+import { StorexHubApi_v0, PluginLoadError_v0, InstallPluginResult_v0, StorexHubCallbacks_v0, ListPluginsResult_v0, InstallPluginOptions_v0, InspectPluginOptions_v0, InspectPluginResult_v0 } from "../public-api";
 import { getPluginInfo } from './utils';
 
+type FsModule = Pick<typeof fs, 'readdirSync' | 'readFileSync' | 'existsSync'>
 export class PluginManager {
     loadedPlugins: { [identifier: string]: PluginInterface } = {}
     private pluginStorage!: PluginManagementStorage
+    private fsModule: FsModule
 
     constructor(private options: {
         createApi: (appIdentifer: string, options?: { callbacks?: StorexHubCallbacks_v0 }) => Promise<StorexHubApi_v0>
         pluginsDir?: string
+        fsModule?: FsModule
     }) {
-
+        this.fsModule = options.fsModule ?? fs
     }
 
     async setup(pluginStorage: PluginManagementStorage) {
@@ -44,13 +46,13 @@ export class PluginManager {
         }
 
         if (this.options.pluginsDir) {
-            if (!fs.existsSync(this.options.pluginsDir)) {
+            if (!this.fsModule.existsSync(this.options.pluginsDir)) {
                 return result
             }
 
-            const pluginDirNames = fs.readdirSync(this.options.pluginsDir)
+            const pluginDirNames = this.fsModule.readdirSync(this.options.pluginsDir)
             for (const pluginDirName of pluginDirNames) {
-                const maybePluginInfo = await getPluginInfo(path.join(this.options.pluginsDir, pluginDirName))
+                const maybePluginInfo = await getPluginInfo(path.join(this.options.pluginsDir, pluginDirName), this.fsModule)
                 if (maybePluginInfo.status !== 'success') {
                     continue
                 }
@@ -70,11 +72,26 @@ export class PluginManager {
         return result
     }
 
+    async inspectPlugin(options: InspectPluginOptions_v0): Promise<InspectPluginResult_v0> {
+        if ('location' in options) {
+            throw new Error(`Not implemented`)
+        }
+
+        const findResult = await this._findPluginByIdentifier(options.identifier)
+        if (!findResult) {
+            return { status: 'not-found', identifier: options.identifier }
+        }
+        return {
+            status: 'success',
+            pluginInfo: findResult.pluginInfo,
+        }
+    }
+
     async installPlugin(options: InstallPluginOptions_v0): Promise<InstallPluginResult_v0> {
         let pluginInfo: PluginInfo
         let location: string
         if ('location' in options) {
-            const maybePluginInfo = await getPluginInfo(options.location)
+            const maybePluginInfo = await getPluginInfo(options.location, this.fsModule)
             if (maybePluginInfo.status !== 'success') {
                 return maybePluginInfo
             }
@@ -111,10 +128,10 @@ export class PluginManager {
             return null
         }
 
-        const pluginDirNames = fs.readdirSync(this.options.pluginsDir)
+        const pluginDirNames = this.fsModule.readdirSync(this.options.pluginsDir)
         for (const pluginDirName of pluginDirNames) {
             const location = path.join(this.options.pluginsDir, pluginDirName);
-            const maybePluginInfo = await getPluginInfo(location)
+            const maybePluginInfo = await getPluginInfo(location, this.fsModule)
             if (maybePluginInfo.status !== 'success') {
                 continue
             }
