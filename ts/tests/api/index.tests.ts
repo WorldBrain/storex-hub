@@ -1,4 +1,5 @@
 import * as path from 'path'
+const FakeFs = require('fake-fs')
 import tempy from 'tempy'
 import del from 'del'
 import Koa from 'koa'
@@ -40,9 +41,7 @@ interface TestSuitePreferences {
 
 let storageBackendsCreated = 0
 
-export async function withTestApplication(body: (appliication: Application) => Promise<void>, options?: { storageBackend: TestApplicationStorageBackend }) {
-    global['navigator'] = { userAgent: 'memory' } // Dexie checks this even if it doesn't exist
-
+export async function createTestApplication(options?: { storageBackend: TestApplicationStorageBackend, inMemoryFs?: boolean }) {
     let applicationDependencies: ApplicationOptions
     let cleanup: (() => Promise<void>) | undefined
     if (options?.storageBackend === 'typeorm') {
@@ -85,12 +84,23 @@ export async function withTestApplication(body: (appliication: Application) => P
             },
         }
     }
+    if (options?.inMemoryFs) {
+        applicationDependencies.fsModule = new FakeFs()
+        applicationDependencies.fsModule!.mkdirSync('/plugins')
+        applicationDependencies.pluginsDir = '/plugins'
+    }
 
-    const application = new Application(applicationDependencies)
+    return { application: new Application(applicationDependencies), cleanup, fs: applicationDependencies.fsModule }
+}
+
+export async function withTestApplication(body: (appliication: Application) => Promise<void>, options?: { storageBackend: TestApplicationStorageBackend }) {
+    global['navigator'] = { userAgent: 'memory' } // Dexie checks this even if it doesn't exist
+
+    const { application, cleanup } = await createTestApplication(options)
     try {
         await body(application)
     } finally {
-        // await cleanup?.()
+        await cleanup?.()
     }
 }
 

@@ -1,6 +1,7 @@
 import pick from 'lodash/pick'
 import expect from 'expect';
 import { createApiTestSuite } from "./index.tests";
+import { SettingsDescription } from '@worldbrain/storex-hub-interfaces/lib/settings';
 
 export default createApiTestSuite('App settings', ({ it }) => {
     it('should store and retrieve app settings', async ({ createSession }) => {
@@ -67,5 +68,40 @@ export default createApiTestSuite('App settings', ({ it }) => {
             status: 'success',
             settings,
         })
+    })
+
+    it('should describe and get setting descriptions', async ({ createSession }) => {
+        const { api: contacts } = await createSession()
+        await contacts.registerApp({ name: 'contacts', identify: true })
+
+        const { api: manager } = await createSession()
+        await manager.registerApp({ name: 'manager', identify: true })
+
+        const description: SettingsDescription = {
+            layout: {
+                sections: [
+                    {
+                        title: 'First', contents: [
+                            { field: 'one' }
+                        ]
+                    }
+                ]
+            },
+            fields: {
+                one: {
+                    type: 'string',
+                    label: 'one',
+                    widget: { type: 'text-input' },
+                }
+            }
+        }
+        const describeResult = await contacts.describeAppSettings({ description })
+        expect(describeResult).toEqual({ status: 'success' })
+
+        const ownRetrieval = await contacts.getAppSettingsDescription({})
+        expect(ownRetrieval).toEqual({ status: 'success', description })
+
+        const foreignRetrieval = await manager.getAppSettingsDescription({ app: 'contacts' })
+        expect(foreignRetrieval).toEqual({ status: 'success', description })
     })
 })

@@ -1,5 +1,6 @@
 {
   "identifier": "io.worldbrain.storex-hub.test-plugin",
+  "name": "Test plugin",
   "version": "0.0.1",
   "description": "Plugin used during Storex Hub integration tests",
   "siteUrl": "https://github.com/WorldBrain/storex-hub/ts/tests/plugins/test-plugin",

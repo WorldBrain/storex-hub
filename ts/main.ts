@@ -20,12 +20,13 @@ let storageBackendsCreated = 0
 
 export async function main(options?: {
     runtimeConfig?: RuntimeConfig,
+    frontedDir?: string
     withoutServer?: boolean
 }) {
     const runtimeConfig = options?.runtimeConfig ?? getRuntimeConfig()
     const application = await setupApplication(runtimeConfig)
     if (!options?.withoutServer) {
-        await startServer(application)
+        await startServer(application, { frontendDir: options?.frontedDir })
     }
     return { application }
 }
@@ -48,9 +49,10 @@ export async function setupApplication(runtimeConfig?: RuntimeConfig) {
     return application
 }
 
-export async function startServer(application: Application) {
+export async function startServer(application: Application, options: { frontendDir?: string }) {
     const server = await createHttpServer(application, {
-        secretKey: 'very secret key'
+        secretKey: 'very secret key',
+        ...options,
     })
 
     const port = getPortNumber()
