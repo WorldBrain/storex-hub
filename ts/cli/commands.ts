@@ -24,6 +24,9 @@ export const COMMANDS: Commands = {
             console.error(`Could retrieve app config: ${response.status}`)
         }
     },
+    'plugins:list': async (args, { client }) => {
+        console.log(await client.listPlugins())
+    },
     'plugins:inspect': async (args, { client }) => {
         const location = path.resolve(args.path)
         // await client.inspectPlugin({ location })

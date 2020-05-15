@@ -2,13 +2,12 @@ import Koa from 'koa'
 import Router from 'koa-router'
 import session from 'koa-session'
 import bodyParser from 'koa-bodyparser'
-const serve = require('koa-serve')
+const serve = require('koa-static-server')
 const IO = require('koa-socket-2')
 import { Application } from "../application";
 import { STOREX_HUB_API_v0, StorexHubApi_v0, StorexHubCallbacks_v0, AllStorexHubCallbacks_v0 } from '../public-api';
 import { Server } from 'http'
 import { SocketSessionMap } from './socket-session-map'
-import { Session } from '../session'
 
 export async function createHttpServer(application: Application, options: {
     secretKey: string,
@@ -23,7 +22,13 @@ export async function createHttpServer(application: Application, options: {
     app.keys = [options.secretKey]
     app.use(bodyParser())
     app.use(session({}, app))
-    // app.use(koaStatic())
+    if (options.frontendDir) {
+        console.log(options.frontendDir)
+        app.use(serve({
+            rootDir: options.frontendDir,
+            rootPath: '/management'
+        }))
+    }
 
     const io = new IO() as SocketIO.Server
     io.attach(app)
