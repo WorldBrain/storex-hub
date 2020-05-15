@@ -27,3 +27,4 @@ private
 lib
 cli.config.json*
 build
+frontend

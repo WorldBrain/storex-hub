@@ -104,6 +104,11 @@ export function parseArgs(args: string[]): { appArgs: AppArgs, commandArgs: (Com
             },
         })
         .command({
+            command: 'plugin:list',
+            describe: 'List plugins',
+            handler: commandHandler('plugins:list')
+        })
+        .command({
             command: 'plugin:inspect <path>',
             describe: 'Install a new plugin',
             handler: commandHandler('plugins:inspect')

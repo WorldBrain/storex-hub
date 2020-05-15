@@ -20,13 +20,17 @@ let storageBackendsCreated = 0
 
 export async function main(options?: {
     runtimeConfig?: RuntimeConfig,
-    frontedDir?: string
+    frontendDir?: string
     withoutServer?: boolean
 }) {
     const runtimeConfig = options?.runtimeConfig ?? getRuntimeConfig()
     const application = await setupApplication(runtimeConfig)
     if (!options?.withoutServer) {
-        await startServer(application, { frontendDir: options?.frontedDir })
+        let frontendDir = options?.frontendDir
+        if (!frontendDir) {
+            frontendDir = path.join(__dirname, '..', 'frontend')
+        }
+        await startServer(application, { frontendDir })
     }
     return { application }
 }
@@ -58,6 +62,7 @@ export async function startServer(application: Application, options: { frontendD
     const port = getPortNumber()
     await server.start({ port })
     console.log(`Server started at http://localhost:${port}`)
+    console.log(`You can find the management UI at http://localhost:${port}/management/`)
     return server
 }
 
