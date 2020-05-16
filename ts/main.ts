@@ -28,7 +28,7 @@ export async function main(options?: {
     if (!options?.withoutServer) {
         let frontendDir = options?.frontendDir
         if (!frontendDir) {
-            frontendDir = path.join(__dirname, '..', 'frontend')
+            frontendDir = path.join(__dirname, '..', 'frontend', 'build')
         }
         await startServer(application, { frontendDir })
     }
