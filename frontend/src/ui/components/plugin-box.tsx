@@ -5,11 +5,23 @@ import RouteLink from "./route-link";
 import { Services } from "../../services/types";
 import { DisplayedPluginInfo } from "../types/plugins";
 import { stat } from "fs";
+import LoadingIndicator from './LoadingIndicator';
+
+// importing images
+
+// TODO: make images dependent on state
+
+import checkImg from '../../assets/images/check.svg';
+import docsImg from '../../assets/images/book-open.svg';
+
+//
+
 
 const StyledPluginBox = styled.div`
   display: flex;
+  align-items: center;
 `;
-const logoRadius = "47px";
+const logoRadius = "30px";
 const PluginLogo = styled.div`
   width: calc(${logoRadius} * 2);
   height: calc(${logoRadius} * 2);
@@ -21,10 +33,12 @@ const PluginLogo = styled.div`
 `;
 const PluginBody = styled.div`
   margin-left: 32px;
+  display: flex;
+  flex-direction: column;
 `;
 const PluginTitle = styled.div`
   color: black;
-  font-size: ${fontSizes.large};
+  font-size: ${fontSizes.small};
   font-weight: bold;
 `;
 const PluginDescription = styled.div`
@@ -45,17 +59,23 @@ const PluginActionsInner = styled.div`
   flex-direction: row;
 `;
 const PluginAction = styled.div`
-  background: black;
+  background-image: url(${checkImg});
+  background-size: 20px;
+  background-repeat: no-repeat;
+  background-position: center;
   width: 20px;
   height: 20px;
   margin-left: 10px;
   cursor: pointer;
 `;
 const PluginActionLink = styled.a`
-  background: black;
   width: 20px;
   height: 20px;
   margin-left: 10px;
+  background-image: url(${docsImg});
+  background-size: 20px;
+  background-repeat: no-repeat;
+  background-position: center;
 `;
 
 export interface PluginBoxProps {
@@ -96,7 +116,7 @@ export default function PluginBox(props: PluginBoxProps) {
             ></PluginAction>
           )}
           {status === "installing" && (
-            <PluginAction title={`Installing...`}></PluginAction>
+            <LoadingIndicator/>
           )}
           {status === "installed-but-errored" && (
             <PluginAction
@@ -148,7 +168,7 @@ export default function PluginBox(props: PluginBoxProps) {
           {plugin.siteUrl && (
             <PluginActionLink
               href={plugin.siteUrl}
-              title="Go to plugin website (opens in new window"
+              title="Read plugin documentation"
               target="_blank"
             />
           )}

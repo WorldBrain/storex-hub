@@ -23,7 +23,7 @@ const StyledPlugins = styled.div`
 const LeftPane = styled.div`
   width: ${leftPaneSize};
   padding-left: ${leftPageMargin};
-  font-size: ${fontSizes.large};
+  font-size: ${fontSizes.normal};
 `;
 const LeftPaneItem = styled.div<{ active?: boolean }>`
   font-weight: ${(props) => (props.active ? "bold" : "normal")};
@@ -46,14 +46,7 @@ export default function PluginOverview(props: {
         subtext="You must trust the plugins you install. They will be able to read all
             data you store in StorexHub."
       />
-      <Heading text="Installed plugins" />
-      <Margin bottom={3}>
-        {renderPluginList(props.state.installedPlugins, {
-          emptyText: "No installed plugins",
-        })}
-      </Margin>
-
-      <Heading text="Available plugins" />
+      <Heading text="🎉 New or updated plugins" />
       <CtaBox
         description="Learn how to develop &amp; install your own plugins!"
         externalHref="https://worldbrain.github.io/storex-docs/#/storex-hub/"
@@ -62,6 +55,12 @@ export default function PluginOverview(props: {
       <Margin vertical={3}>
         {renderPluginList(props.state.availablePlugins, {
           emptyText: "Can't find any other plugins on your disk",
+        })}
+      </Margin>
+      <Heading text="💾 Installed plugins" />
+      <Margin bottom={3}>
+        {renderPluginList(props.state.installedPlugins, {
+          emptyText: "No installed plugins",
         })}
       </Margin>
     </>
