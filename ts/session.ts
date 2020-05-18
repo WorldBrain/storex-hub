@@ -54,7 +54,7 @@ export class Session implements api.StorexHubApi_v0 {
     constructor(private options: SessionOptions) {
     }
 
-    async registerApp(options: api.RegisterAppOptions_v0): Promise<api.RegisterAppResult_v0> {
+    registerApp: api.StorexHubApi_v0['registerApp'] = async (options) => {
         const storage = await this.options.getStorage()
         const existingApp = await storage.systemModules.apps.getApp(options.name)
         if (existingApp) {
@@ -73,7 +73,7 @@ export class Session implements api.StorexHubApi_v0 {
         return { status: 'success', accessToken: accessToken.plainTextToken }
     }
 
-    async identifyApp(options: api.IdentifyAppOptions_v0): Promise<api.IdentifyAppResult_v0> {
+    identifyApp: api.StorexHubApi_v0['identifyApp'] = async (options) => {
         const storage = await this.options.getStorage()
         const existingApp = await storage.systemModules.apps.getApp(options.name)
         if (!existingApp) {
@@ -89,14 +89,14 @@ export class Session implements api.StorexHubApi_v0 {
         return { status: 'success' }
     }
 
-    async getSessionInfo(): Promise<api.GetSessionInfoResult_v0> {
+    getSessionInfo: api.StorexHubApi_v0['getSessionInfo'] = async () => {
         return {
             status: 'success',
             appIdentifier: this.identifiedApp && this.identifiedApp.identifier,
         }
     }
 
-    async executeOperation(options: api.ExecuteOperationOptions_v0): Promise<api.ExecuteOperationResult_v0> {
+    executeOperation: api.StorexHubApi_v0['executeOperation'] = async (options) => {
         if (!this.identifiedApp) {
             throw new Error(`Operation executed without app identification`)
         }
@@ -108,7 +108,7 @@ export class Session implements api.StorexHubApi_v0 {
         return { status: 'success', result: await appStorage.operation(options.operation[0], ...options.operation.slice(1)) }
     }
 
-    async updateSchema(options: { schema: AppSchema }): Promise<api.UpdateSchemaResult_v0> {
+    updateSchema: api.StorexHubApi_v0['updateSchema'] = async (options) => {
         if (!this.identifiedApp) {
             return {
                 success: false, errorCode: api.UpdateSchemaError_v0.NOT_ALLOWED,
@@ -128,7 +128,7 @@ export class Session implements api.StorexHubApi_v0 {
         return { success: true }
     }
 
-    async executeRemoteOperation(options: api.ExecuteRemoteOperationOptions_v0): Promise<api.ExecuteRemoteOperationResult_v0> {
+    executeRemoteOperation: api.StorexHubApi_v0['executeRemoteOperation'] = async (options) => {
         if (!this.identifiedApp) {
             return { status: 'not-identified' }
         }
@@ -146,19 +146,35 @@ export class Session implements api.StorexHubApi_v0 {
         return response
     }
 
-    async subscribeToEvent(options: api.SubscribeToEventOptions_v0): Promise<api.SubscribeToEventResult_v0> {
+    executeRemoteCall: api.StorexHubApi_v0['executeRemoteCall'] = async (options) => {
+        if (!this.identifiedApp) {
+            return { status: 'not-identified' }
+        }
+
+        const response = await this.options.executeCallback(options.app, 'handleRemoteCall', {
+            call: options.call,
+            args: options.args
+        })
+        if (response.status === 'success') {
+            return response.result
+        } else {
+            return response
+        }
+    }
+
+    subscribeToEvent: api.StorexHubApi_v0['subscribeToEvent'] = async (options) => {
         return this.options.subscribeToEvent(options)
     }
 
-    async unsubscribeFromEvent(options: api.UnsubscribeFromEventOptions_v0): Promise<api.UnsubscribeFromEventResult_v0> {
+    unsubscribeFromEvent: api.StorexHubApi_v0['unsubscribeFromEvent'] = async (options) => {
         return this.options.unsubscribeFromEvent(options)
     }
 
-    async emitEvent(options: api.EmitEventOptions_v0): Promise<api.EmitEventResult_v0> {
+    emitEvent: api.StorexHubApi_v0['emitEvent'] = async (options) => {
         return this.options.emitEvent(options)
     }
 
-    async destroySession() {
+    destroySession: api.StorexHubApi_v0['destroySession'] = async () => {
         if (!this.destroyed) {
             await this.options.destroySession()
             this.destroyed = true
