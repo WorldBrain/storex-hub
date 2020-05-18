@@ -14,8 +14,8 @@ export async function standalone() {
     }
 
     const standaloneDirPath = path.dirname(process.argv[0])
-    const dbFilePath = path.join(standaloneDirPath, 'database')
-    const pluginsDir = path.join(standaloneDirPath, 'plugins')
+    const dbFilePath = process.env.DB_PATH || path.join(standaloneDirPath, 'database')
+    const pluginsDir = process.env.PLUGINS_DIR || path.join(standaloneDirPath, 'plugins')
     try {
         mkdirSync(pluginsDir)
     } catch (e) { }
