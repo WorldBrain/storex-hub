@@ -15,6 +15,12 @@
   },
   "keywords": [],
   "author": "Vincent den Boer",
+  "files": [
+    "lib/*",
+    "ts/*",
+    "tsconfig.json",
+    "scripts"
+  ],
   "dependencies": {
     "@josephg/resolvable": "^1.0.0",
     "@types/koa-session": "^5.10.1",
