@@ -5,17 +5,34 @@ import RouteLink from "./route-link";
 import { Services } from "../../services/types";
 import { DisplayedPluginInfo } from "../types/plugins";
 import { stat } from "fs";
-import LoadingIndicator from './LoadingIndicator';
+import LoadingIndicator from "./LoadingIndicator";
 
 // importing images
 
 // TODO: make images dependent on state
 
-import checkImg from '../../assets/images/check.svg';
-import docsImg from '../../assets/images/book-open.svg';
+import checkImg from "../../assets/images/check.svg";
+import docsImg from "../../assets/images/book-open.svg";
 
 //
-
+const IMAGES_BY_STATUS: {
+  [Status in DisplayedPluginInfo["status"]]: string;
+} = {
+  available: checkImg,
+  installing: "",
+  "could-not-install": "",
+  "installed-but-errored": "",
+  "successfully-installed": "",
+  enabled: "",
+  enabling: "",
+  "could-not-enable": "",
+  "enabled-but-errored": "",
+  "successfully-enabled": "",
+  disabled: "",
+  disabling: "",
+  "could-not-disable": "",
+  "disable-pending": "",
+};
 
 const StyledPluginBox = styled.div`
   display: flex;
@@ -58,8 +75,8 @@ const PluginActionsInner = styled.div`
   align-items: center;
   flex-direction: row;
 `;
-const PluginAction = styled.div`
-  background-image: url(${checkImg});
+const PluginAction = styled.div<{ status: DisplayedPluginInfo["status"] }>`
+  background-image: url(${(props) => IMAGES_BY_STATUS[props.status]});
   background-size: 20px;
   background-repeat: no-repeat;
   background-position: center;
@@ -112,55 +129,66 @@ export default function PluginBox(props: PluginBoxProps) {
           {status === "available" && (
             <PluginAction
               title={`Install`}
+              status={status}
               onClick={props.onInstall}
             ></PluginAction>
           )}
-          {status === "installing" && (
-            <LoadingIndicator/>
-          )}
+          {status === "installing" && <LoadingIndicator />}
           {status === "installed-but-errored" && (
             <PluginAction
               title={`Installed, but there was an error starting it`}
+              status={status}
             ></PluginAction>
           )}
           {status === "could-not-install" && (
             <PluginAction
               title={`Something went wrong installing the plugin`}
+              status={status}
             ></PluginAction>
           )}
           {status === "successfully-installed" && (
-            <PluginAction title={`Successfuly installed`}></PluginAction>
+            <PluginAction
+              title={`Successfuly installed`}
+              status={status}
+            ></PluginAction>
           )}
 
           {/* Enabling */}
           {status === "disabled" && (
             <PluginAction
               title={`Enable`}
+              status={status}
               onClick={props.onEnable}
             ></PluginAction>
           )}
           {status === "successfully-enabled" && (
-            <PluginAction title={`Successfuly enabled`}></PluginAction>
+            <PluginAction
+              title={`Successfuly enabled`}
+              status={status}
+            ></PluginAction>
           )}
 
           {/* Disabling */}
           {status === "enabled" && (
             <PluginAction
               title={`Disable`}
+              status={status}
               onClick={props.onDisable}
             ></PluginAction>
           )}
           {status === "disabling" && (
-            <PluginAction title={`Disabling...`}></PluginAction>
+            <PluginAction title={`Disabling...`} status={status}></PluginAction>
           )}
           {status === "could-not-disable" && (
             <PluginAction
               title={`Something went wrong disabling the plugin`}
+              status={status}
             ></PluginAction>
           )}
           {status === "disable-pending" && (
             <PluginAction
               title={`Restart Storex Hub to disable plugin`}
+              status={status}
             ></PluginAction>
           )}
 
