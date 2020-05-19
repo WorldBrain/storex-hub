@@ -25,17 +25,20 @@ export default createEntryPointTestSuite('Plugins', ({ it }) => {
     it('should correctly list plugins and install listed plugins by identifier', async ({ start, getApplication }) => {
         const tmpDir = tempy.directory()
         const dbPath = path.join(tmpDir, 'db')
-        const pluginDir = path.join(tmpDir, 'plugins')
+        const pluginsDir = path.join(tmpDir, 'plugins')
         try {
             const { createSession } = await start({
                 runtimeConfig: {
                     dbPath,
-                    pluginsDir: pluginDir
+                    pluginsDir
                 }
             })
+            console.log('efefea 1')
             const location = path.join(__dirname, 'test-plugin')
-            await copy(location, path.join(pluginDir, 'test-plugin'))
+            await copy(location, path.join(pluginsDir, 'test-plugin'))
+            console.log('efefea 2')
             const { api } = await createSession()
+            console.log('efefea 3')
             expect(await api.listPlugins()).toEqual(listedPlugins('available'))
             const installResponse = await api.installPlugin({
                 identifier: TEST_PLUGIN_IDENTIFIER
@@ -50,7 +53,7 @@ export default createEntryPointTestSuite('Plugins', ({ it }) => {
             }
             expect(await api.listPlugins()).toEqual(listedPlugins('enabled'))
         } finally {
-            // del(tmpDir, { force: true })
+            del(tmpDir, { force: true })
         }
     })
 

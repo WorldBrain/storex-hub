@@ -15,6 +15,7 @@ import { sequentialTokenGenerator } from "../../access-tokens.tests";
 import { createHttpServer } from '../../server';
 import { StorexHubApi_v0, StorexHubCallbacks_v0 } from '../../public-api';
 import { createStorexHubClient, createStorexHubSocketClient } from '../../client';
+import { createStandaloneEntryPoint } from '../index.tests'
 
 export type TestSetup<ApiOptions = never, OptionsRequired extends boolean = true, Session = TestSession> = OptionsRequired extends true
     ? { createSession(options: ApiOptions): Promise<Session> }
@@ -34,11 +35,12 @@ export type TestSuite<ApiOptions = never, OptionsRequired extends boolean = true
     (options: { it: TestFactory<ApiOptions, OptionsRequired, Session> }) => void
 type TestApplicationStorageBackend = 'dexie' | 'typeorm'
 
-type TestSuiteType = 'direct.dexie' | 'http.dexie' | 'websocket.dexie' | 'websocket.sqlite'
+type TestSuiteType = 'direct.dexie' | 'http.dexie' | 'websocket.dexie' | 'websocket.sqlite' | 'standalone.websocket.sqlite'
 interface TestSuitePreferences {
     enabled: { [Type in TestSuiteType]: boolean }
 }
 
+const IS_STANDALONE_TEST = process.env.TEST_STANDALONE === 'true'
 let storageBackendsCreated = 0
 
 export async function createTestApplication(options?: { storageBackend: TestApplicationStorageBackend, inMemoryFs?: boolean }) {
@@ -166,10 +168,10 @@ export function createWebsocketTestFactory(options?: { storageBackend: TestAppli
         it(description, test && (async () => {
             await withTestApplication(async application => {
                 const server = await createHttpServer(application, {
-                    secretKey: 'bla'
+                    secretKey: 'bla',
                 })
 
-                await server.start()
+                await server.start({ port: 3000 })
                 const sockets: SocketIOClient.Socket[] = []
                 try {
                     await test({
@@ -188,10 +190,10 @@ export function createWebsocketTestFactory(options?: { storageBackend: TestAppli
                         }
                     })
                 } finally {
-                    await server.stop()
                     for (const socket of sockets) {
                         socket.disconnect()
                     }
+                    await server.stop()
                 }
             }, options)
         }))
@@ -247,6 +249,28 @@ export function createMultiApiTestFactory() {
     return factory
 }
 
+export function createStandaloneTestFactory() {
+    const factory: TestFactory<ApplicationApiOptions, false> = (description, test?) => {
+        it(description, test && (async () => {
+            const tmpDir = tempy.directory()
+            const dbPath = path.join(tmpDir, 'db')
+            const pluginsDir = path.join(tmpDir, 'plugins')
+            const created = await createStandaloneEntryPoint({ runtimeConfig: { dbPath, pluginsDir } })
+            try {
+                test?.({
+                    createSession: async (options) => {
+                        return created.createSession({ callbacks: options?.callbacks })
+                    }
+                })
+            } finally {
+                await created.cleanup?.()
+                del(tmpDir, { force: true })
+            }
+        }))
+    }
+    return factory
+}
+
 export function createApiTestSuite(description: string, suite: TestSuite<ApplicationApiOptions, false>) {
     describe(description, () => {
         const preferences = getTestSuitePreferences()
@@ -274,6 +298,12 @@ export function createApiTestSuite(description: string, suite: TestSuite<Applica
                 suite({ it: createWebsocketTestFactory({ storageBackend: 'typeorm' }) })
             })
         }
+
+        if (preferences.enabled["standalone.websocket.sqlite"]) {
+            describe('WebSocket API with SQLite', () => {
+                suite({ it: createStandaloneTestFactory() })
+            })
+        }
     })
 }
 
@@ -285,13 +315,14 @@ export function createMultiApiTestSuite(description: string, suite: TestSuite<Mu
 
 export function getTestSuitePreferences(): TestSuitePreferences {
     const suitePrefString = process.env.STOREX_HUB_TEST_SUITES
-    const defaultEnabled = !suitePrefString || suitePrefString === 'all'
+    const defaultEnabled = !IS_STANDALONE_TEST && (!suitePrefString || suitePrefString === 'all')
     const preferences: TestSuitePreferences = {
         enabled: {
             'direct.dexie': defaultEnabled,
             'http.dexie': defaultEnabled,
             'websocket.dexie': defaultEnabled,
-            'websocket.sqlite': defaultEnabled
+            'websocket.sqlite': defaultEnabled,
+            'standalone.websocket.sqlite': IS_STANDALONE_TEST,
         }
     }
 

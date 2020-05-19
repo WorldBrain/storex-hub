@@ -8,6 +8,17 @@ import { Application } from "../application"
 import { createStorexHubSocketClient } from '../client'
 import { create } from "domain"
 
+export interface TestEntryPoint {
+    createSession: (options: {
+        callbacks?: StorexHubCallbacks_v0
+    }) => Promise<{
+        api: StorexHubApi_v0
+        close: () => Promise<void>
+    }>
+    application?: Application
+    cleanup?: () => Promise<void>
+}
+
 export interface EntryPointTestContext {
     isStandalone: boolean
     start(options: { runtimeConfig: RuntimeConfig }): Promise<{ createSession: (options?: { callbacks?: StorexHubCallbacks_v0 }) => Promise<{ api: StorexHubApi_v0 }> }>
@@ -24,17 +35,19 @@ export function createEntryPointTestSuite(suiteDescription: string, suite: Entry
     describe(suiteDescription, () => {
         suite({
             it: (testDescription: string, test) => {
-                it(testDescription, async () => {
-                    let created: { application: Application, cleanup?: () => Promise<void> } | undefined
+                it(testDescription, async function () {
+                    this.timeout(5000)
+                    let created: TestEntryPoint | undefined
                     try {
                         await test({
-                            isStandalone: false,
+                            isStandalone,
                             start: async (startOptions) => {
                                 if (!created) {
-                                    created = await createApplication({ ...startOptions, isStandalone })
+                                    const create = isStandalone ? createStandaloneEntryPoint : createInProcessEntryPoint
+                                    created = await create(startOptions)
                                 }
 
-                                return { createSession: async sessionOptions => ({ api: await created!.application.api(sessionOptions as any) }) }
+                                return { createSession: async sessionOptions => await created!.createSession(sessionOptions as any) }
                             },
                             getApplication: () => !isStandalone ? created?.application ?? null : null,
                         })
@@ -47,40 +60,61 @@ export function createEntryPointTestSuite(suiteDescription: string, suite: Entry
     })
 }
 
-async function createApplication(options: { isStandalone: boolean, runtimeConfig: RuntimeConfig }): Promise<{ application: Application, cleanup?: () => Promise<void> }> {
-    if (!options.isStandalone) {
-        const { application } = await main({
-            withoutServer: true,
-            runtimeConfig: options.runtimeConfig
-        })
-        return { application }
-    }
-
-    const execPath = join(STANDALONE_DIR, 'storex-hub')
-
-    const child = spawn(execPath, [], {
-        stdio: 'inherit',
-        env: {
-            NO_AUTO_LAUCH: 'true',
-            DB_PATH: options.runtimeConfig.dbPath,
-            PLUGINS_DIR: options.runtimeConfig.pluginsDir,
-        }
+export async function createInProcessEntryPoint(options: { runtimeConfig: RuntimeConfig }): Promise<TestEntryPoint> {
+    const { application } = await main({
+        withoutServer: true,
+        runtimeConfig: options.runtimeConfig
     })
-    const application = {
-        api: async (options: { callbacks: StorexHubCallbacks_v0 }) => {
-            const socket = io('http://localhost:50483', { forceNew: true })
-            return createStorexHubSocketClient(socket, options)
-        }
-    } as Application
     return {
         application,
-        cleanup: () => {
-            return new Promise(resolve => {
-                child.once('exit', () => {
-                    resolve()
-                })
-                child.kill()
-            })
+        createSession: async sessionOptions => {
+            return {
+                api: await application.api({
+                    callbacks: sessionOptions.callbacks as any
+                }),
+                close: async () => { }
+            }
+        }
+    }
+}
+
+export async function createStandaloneEntryPoint(options: { runtimeConfig: RuntimeConfig }): Promise<TestEntryPoint> {
+    const execPath = join(STANDALONE_DIR, 'storex-hub')
+
+    const env = {
+        NO_AUTO_LAUCH: 'true',
+        DB_PATH: options.runtimeConfig.dbPath,
+        PLUGINS_DIR: options.runtimeConfig.pluginsDir,
+    }
+    const child = spawn(execPath, [], {
+        stdio: 'inherit',
+        env
+    })
+    const waitForExit = new Promise((resolve, reject) => {
+        let errored = false
+        child.once('exit', (code, signal) => {
+            if (!errored) {
+                resolve()
+            }
+        })
+        child.once('error', (err) => {
+            errored = true
+            reject(err)
+        })
+    })
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    return {
+        createSession: async (options: { callbacks?: Partial<StorexHubCallbacks_v0> }) => {
+            const socket = io('http://localhost:50483', { forceNew: true })
+            return {
+                api: await createStorexHubSocketClient(socket, options),
+                close: async () => { }
+            }
+        },
+        cleanup: async () => {
+            console.log('ceanefea')
+            child.kill()
+            await waitForExit
         }
     }
 }

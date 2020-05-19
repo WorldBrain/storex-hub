@@ -1,7 +1,8 @@
 #!/bin/bash
 
 if [ "$SKIP_TSC" != "true" ]; then
-    tsc || exit 1
+    echo "Running tsc..."
+    rm -rf lib && tsc || exit 1
 fi
 
 if [ "$SKIP_FRONTEND_BUILD" != "true" ]; then

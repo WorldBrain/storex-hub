@@ -28,9 +28,22 @@ export async function createStorexHubSocketClient(socket: SocketIOClient.Socket,
         })
     })
     const waitForError = new Promise<never>((resolve, reject) => {
+        let errored = false
+        const maybeError = (error: Error) => {
+            if (!errored) {
+                errored = true
+                reject(error)
+            }
+        }
         socket.once('error', (error: Error) => {
-            reject(error)
+            maybeError(error)
         })
+        // socket.once('connect_error', (error: Error) => {
+        //     maybeError(error)
+        // })
+        // socket.once('connect_timeout', (error: Error) => {
+        //     maybeError(error)
+        // })
     })
     if (options?.callbacks) {
         const callbacks = options.callbacks
@@ -43,7 +56,9 @@ export async function createStorexHubSocketClient(socket: SocketIOClient.Socket,
         })
     }
 
+    console.log(1)
     await Promise.race([waitForConnection, waitForError])
+    console.log(2)
 
     let requestCount = 0
     return createStorexHubClient(

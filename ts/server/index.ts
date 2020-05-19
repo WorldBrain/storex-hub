@@ -1,3 +1,4 @@
+import http from 'http'
 import Koa from 'koa'
 import Router from 'koa-router'
 import session from 'koa-session'
@@ -6,7 +7,6 @@ const serve = require('koa-static-server')
 const IO = require('koa-socket-2')
 import { Application } from "../application";
 import { STOREX_HUB_API_v0, StorexHubApi_v0, StorexHubCallbacks_v0, AllStorexHubCallbacks_v0 } from '../public-api';
-import { Server } from 'http'
 import { SocketSessionMap } from './socket-session-map'
 
 export async function createHttpServer(application: Application, options: {
@@ -60,11 +60,16 @@ export async function createHttpServer(application: Application, options: {
     }
     app.use(router.routes())
 
-    let server: Server
+    let server: http.Server
     return {
         app,
         start: async (options?: { port?: number }) => {
-            server = app.listen(options?.port ?? parseInt(process.env.PORT || '3000'))
+            await new Promise((resolve, reject) => {
+                server = http.createServer(app.callback())
+                server.once('listening', resolve)
+                server.once('error', reject)
+                server.listen(options?.port ?? parseInt(process.env.PORT || '3000'))
+            })
         },
         stop: async () => {
             if (server) {
