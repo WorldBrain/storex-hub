@@ -5,6 +5,10 @@ import { mkdirSync } from 'fs-extra';
 const AutoLaunch = require('auto-launch');
 
 export async function standalone() {
+    if (process.env.NO_PRODUCTION !== 'true') {
+        process.env.NODE_ENV = 'production'
+    }
+
     if (process.env.NO_AUTO_LAUNCH !== 'true') {
         const autoLauncher = new AutoLaunch({
             name: 'Storex Hub',
