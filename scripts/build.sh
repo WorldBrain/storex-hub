@@ -20,7 +20,7 @@ for target in $targets; do
         continue
     fi
 
-    output_dir="build/$target"
+    output_dir="build/storex-hub-$target"
     output="$output_dir/storex-hub"
     if [ "$target" = "win" ]; then
         output="$output.exe"
@@ -51,5 +51,16 @@ for target in $targets; do
         cp node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node $output_dir
     fi
 
+    rm -rf $output_dir/frontend 2> /dev/null
     cp -r frontend/build "$output_dir/frontend"
+
+    if [ "$SKIP_PACKAGING" != "true" ]; then
+        pushd build
+        if [ "$target" != "win" ]; then
+            tar -czf storex-hub-$target.tgz storex-hub-$target
+        else
+            zip -r storex-hub-$target.zip storex-hub-$target
+        fi
+        popd
+    fi
 done
