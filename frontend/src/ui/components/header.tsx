@@ -19,15 +19,19 @@ const StyledHeader = styled.div`
   height: ${headerHeight};
   background: #ffffff;
   box-shadow: 0px 2px 3px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  top: 0px;
+  position: fixed;
 `;
+
 const HeaderLeft = styled.div`
   display: flex;
   height: ${headerHeight};
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding-left: ${leftPageMargin};
-  margin-right: 30px;
-
+  margin-right: 10px;
+  width: 350px;
 
   img {
     width: auto;

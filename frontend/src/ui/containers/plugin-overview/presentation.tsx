@@ -20,6 +20,7 @@ const StyledPlugins = styled.div`
   display: flex;
   align-items: center;
    justify-content: center;
+   margin-top: 100px;
 `;
 
 const LeftPane = styled.div`
@@ -107,7 +108,6 @@ export default function PluginOverview(props: {
   };
 
   return (
-    <Margin top={5}>
       <StyledPlugins>
         {/*<LeftPane>
            <LeftPaneItem active={true}>Available</LeftPaneItem>
@@ -123,6 +123,5 @@ export default function PluginOverview(props: {
           {props.state.loadState === "success" && renderContent()}
         </MainArea>
       </StyledPlugins>
-    </Margin>
   );
 }
