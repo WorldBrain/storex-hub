@@ -18,12 +18,15 @@ import { Services } from "../../../services/types";
 
 const StyledPlugins = styled.div`
   display: flex;
+  align-items: center;
+   justify-content: center;
+   margin-top: 100px;
 `;
 
 const LeftPane = styled.div`
   width: ${leftPaneSize};
   padding-left: ${leftPageMargin};
-  font-size: ${fontSizes.large};
+  font-size: ${fontSizes.normal};
 `;
 const LeftPaneItem = styled.div<{ active?: boolean }>`
   font-weight: ${(props) => (props.active ? "bold" : "normal")};
@@ -31,7 +34,7 @@ const LeftPaneItem = styled.div<{ active?: boolean }>`
 `;
 
 const MainArea = styled.div`
-  margin-right: ${rightPageMargin};
+  margin-right: 0;
 `;
 
 export default function PluginOverview(props: {
@@ -46,14 +49,7 @@ export default function PluginOverview(props: {
         subtext="You must trust the plugins you install. They will be able to read all
             data you store in StorexHub."
       />
-      <Heading text="Installed plugins" />
-      <Margin bottom={3}>
-        {renderPluginList(props.state.installedPlugins, {
-          emptyText: "No installed plugins",
-        })}
-      </Margin>
-
-      <Heading text="Available plugins" />
+      <Heading text="🎉 New plugins" />
       <CtaBox
         description="Learn how to develop &amp; install your own plugins!"
         externalHref="https://worldbrain.github.io/storex-docs/#/storex-hub/"
@@ -62,6 +58,12 @@ export default function PluginOverview(props: {
       <Margin vertical={3}>
         {renderPluginList(props.state.availablePlugins, {
           emptyText: "Can't find any other plugins on your disk",
+        })}
+      </Margin>
+      <Heading text="💾 Installed plugins" />
+      <Margin bottom={3}>
+        {renderPluginList(props.state.installedPlugins, {
+          emptyText: "No installed plugins",
         })}
       </Margin>
     </>
@@ -106,12 +108,11 @@ export default function PluginOverview(props: {
   };
 
   return (
-    <Margin top={5}>
       <StyledPlugins>
-        <LeftPane>
-          {/* <LeftPaneItem active={true}>Available</LeftPaneItem> */}
-          {/* <LeftPaneItem>Installed</LeftPaneItem> */}
-        </LeftPane>
+        {/*<LeftPane>
+           <LeftPaneItem active={true}>Available</LeftPaneItem>
+          {/* <LeftPaneItem>Installed</LeftPaneItem> 
+        </LeftPane>*/}
         <MainArea>
           {props.state.loadState === "error" && (
             <AbsenceText>
@@ -122,6 +123,5 @@ export default function PluginOverview(props: {
           {props.state.loadState === "success" && renderContent()}
         </MainArea>
       </StyledPlugins>
-    </Margin>
   );
 }

@@ -87,4 +87,28 @@ export async function insertStorexHubFixtures(createClient: () => Promise<Storex
         description: 'Share your data through IPFS and Textile',
     }
     fs.writeFileSync('/plugins/org.ipfs/manifest.json', JSON.stringify(ipfsPluginInfo))
+
+    fs.mkdirSync('/plugins/org.ipfs2')
+    const ipfs2PluginInfo: PluginInfo = {
+        version: '0.0.1',
+        name: 'IPFS34',
+        identifier: 'io.ipfs2',
+        mainPath: 'main.js',
+        entryFunction: 'main',
+        siteUrl: 'https://ipfs.io/',
+        description: 'Share your data through IPFS and Textile',
+    }
+    fs.writeFileSync('/plugins/org.ipfs2/manifest.json', JSON.stringify(ipfs2PluginInfo))
+
+    fs.mkdirSync('/plugins/org.ipfs3')
+    const ipfs3PluginInfo: PluginInfo = {
+        version: '0.0.1',
+        name: 'IPFS23',
+        identifier: 'io.ipfs3',
+        mainPath: 'main.js',
+        entryFunction: 'main',
+        siteUrl: 'https://ipfs.io/',
+        description: 'Share your data through IPFS and Textile',
+    }
+    fs.writeFileSync('/plugins/org.ipfs3/manifest.json', JSON.stringify(ipfs3PluginInfo))
 }
