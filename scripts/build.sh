@@ -1,10 +1,14 @@
 #!/bin/bash
 
 if [ "$SKIP_TSC" != "true" ]; then
-    tsc
+    tsc || exit 1
 fi
 
-# pkg lib/standalone.js --out-path build/
+if [ "$SKIP_FRONTEND_BUILD" != "true" ]; then
+    pushd frontend
+    yarn build || exit 1
+    popd
+fi
 
 declare -A platform_by_target
 platform_by_target=( ["linux"]="linux" ["mac"]="darwin" ["win"]="win32" )
@@ -16,7 +20,7 @@ for target in $targets; do
         continue
     fi
 
-    output_dir="build/$target"
+    output_dir="build/storex-hub-$target"
     output="$output_dir/storex-hub"
     if [ "$target" = "win" ]; then
         output="$output.exe"
@@ -46,16 +50,17 @@ for target in $targets; do
 
         cp node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node $output_dir
     fi
+
+    rm -rf $output_dir/frontend 2> /dev/null
+    cp -r frontend/build "$output_dir/frontend"
+
+    if [ "$SKIP_PACKAGING" != "true" ]; then
+        pushd build
+        if [ "$target" != "win" ]; then
+            tar -czf storex-hub-$target.tgz storex-hub-$target
+        else
+            zip -r storex-hub-$target.zip storex-hub-$target
+        fi
+        popd
+    fi
 done
-
-# rm -rf lib 2>/dev/null ; tsc && pkg --target node10-linux-x64 lib/standalone.js --out-path=build
-# rm -rf lib 2>/dev/null ; tsc && pkg --target node10-linux-x64 lib/standalone.js --out-path=build
-
-# cp node_modules/sqlite3/lib/binding/node-v64-linux-x64/node_sqlite3.node
-# cp node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node
-
-# ./node_modules/.bin/node-pre-gyp install
-# --directory=./node_modules/sqlite3
-# --target_platform={OS}
-# --target_arch={OS architecture}
-# --target={Node version}

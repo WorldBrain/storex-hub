@@ -66,7 +66,7 @@ export async function startServer(application: Application, options: { frontendD
     return server
 }
 
-function getPortNumber(): number {
+export function getPortNumber(): number {
     const fromEnv = process.env.STOREX_HUB_PORT
     if (fromEnv) {
         const port = parseInt(fromEnv)

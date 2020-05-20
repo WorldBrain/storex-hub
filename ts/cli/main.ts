@@ -55,7 +55,8 @@ export class StorexCLI {
     async run(args: string[]) {
         const { commandArgs, appArgs } = parseArgs(args)
         if (!commandArgs?.command) {
-            return
+            console.error(`No such command: ${args[0]}`)
+            process.exit(1)
         }
 
         const socket = io(`http://${appArgs.host}:${appArgs.port}`)
@@ -102,6 +103,11 @@ export function parseArgs(args: string[]): { appArgs: AppArgs, commandArgs: (Com
                 type: 'boolean',
                 default: false
             },
+        })
+        .command({
+            command: 'calls:execute <app> <call> <args>',
+            describe: 'Execute call',
+            handler: commandHandler('calls:execute')
         })
         .command({
             command: 'plugin:list',

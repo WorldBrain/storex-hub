@@ -1,9 +1,9 @@
-import { main } from "../../main"
 import tempy from "tempy"
 import del from "del"
 import path from "path"
 import { copy } from "fs-extra"
 import expect from "expect"
+import { createEntryPointTestSuite } from "../index.tests"
 
 const TEST_PLUGIN_IDENTIFIER = 'io.worldbrain.storex-hub.test-plugin'
 
@@ -21,14 +21,13 @@ const listedPlugins = (status: string) => ({
     }
 })
 
-describe('Plugins', () => {
-    it('should correctly list plugins and install listed plugins by identifier', async () => {
+export default createEntryPointTestSuite('Plugins', ({ it }) => {
+    it('should correctly list plugins and install listed plugins by identifier', async ({ start, getApplication }) => {
         const tmpDir = tempy.directory()
         const dbPath = path.join(tmpDir, 'db')
         const pluginDir = path.join(tmpDir, 'plugins')
         try {
-            const { application } = await main({
-                withoutServer: true,
+            const { createSession } = await start({
                 runtimeConfig: {
                     dbPath,
                     pluginsDir: pluginDir
@@ -36,45 +35,55 @@ describe('Plugins', () => {
             })
             const location = path.join(__dirname, 'test-plugin')
             await copy(location, path.join(pluginDir, 'test-plugin'))
-            const api = await application.api()
+            const { api } = await createSession()
             expect(await api.listPlugins()).toEqual(listedPlugins('available'))
             const installResponse = await api.installPlugin({
                 identifier: TEST_PLUGIN_IDENTIFIER
             })
             expect(installResponse).toEqual({ status: 'success' })
-            expect(application.pluginManager.loadedPlugins).toEqual({
-                [TEST_PLUGIN_IDENTIFIER]: expect.objectContaining({ running: true })
-            })
+
+            const application = getApplication()
+            if (application) {
+                expect(application.pluginManager.loadedPlugins).toEqual({
+                    [TEST_PLUGIN_IDENTIFIER]: expect.objectContaining({ running: true })
+                })
+            }
             expect(await api.listPlugins()).toEqual(listedPlugins('enabled'))
         } finally {
-            del(tmpDir, { force: true })
+            // del(tmpDir, { force: true })
         }
     })
 
-    it('should correctly install new plugins by filesystem location', async () => {
+    it('should correctly install new plugins by filesystem location', async ({ start, getApplication }) => {
         const dbPath = tempy.directory()
         try {
-            const { application } = await main({ withoutServer: true, runtimeConfig: { dbPath } })
-            const api = await application.api()
+            const { createSession } = await start({
+                runtimeConfig: {
+                    dbPath,
+                }
+            })
+            const { api } = await createSession()
             const location = path.join(__dirname, 'test-plugin')
             const installResponse = await api.installPlugin({ location })
             expect(installResponse).toEqual({ status: 'success' })
-            expect(application.pluginManager.loadedPlugins).toEqual({
-                [TEST_PLUGIN_IDENTIFIER]: expect.objectContaining({ running: true })
-            })
+            const application = getApplication()
+            if (application) {
+                expect(application.pluginManager.loadedPlugins).toEqual({
+                    [TEST_PLUGIN_IDENTIFIER]: expect.objectContaining({ running: true })
+                })
+            }
             expect(await api.listPlugins()).toEqual(listedPlugins('enabled'))
         } finally {
             del(dbPath, { force: true })
         }
     })
 
-    it('should correctly inspect an installed plugin', async () => {
+    it('should correctly inspect an installed plugin', async ({ start, getApplication }) => {
         const tmpDir = tempy.directory()
         const dbPath = path.join(tmpDir, 'db')
         const pluginDir = path.join(tmpDir, 'plugins')
         try {
-            const { application } = await main({
-                withoutServer: true,
+            const { createSession } = await start({
                 runtimeConfig: {
                     dbPath,
                     pluginsDir: pluginDir
@@ -82,14 +91,17 @@ describe('Plugins', () => {
             })
             const location = path.join(__dirname, 'test-plugin')
             await copy(location, path.join(pluginDir, 'test-plugin'))
-            const api = await application.api()
+            const { api } = await createSession()
             const installResponse = await api.installPlugin({
                 identifier: TEST_PLUGIN_IDENTIFIER
             })
             expect(installResponse).toEqual({ status: 'success' })
-            expect(application.pluginManager.loadedPlugins).toEqual({
-                [TEST_PLUGIN_IDENTIFIER]: expect.objectContaining({ running: true })
-            })
+            const application = getApplication()
+            if (application) {
+                expect(application.pluginManager.loadedPlugins).toEqual({
+                    [TEST_PLUGIN_IDENTIFIER]: expect.objectContaining({ running: true })
+                })
+            }
             expect(await api.inspectPlugin({ identifier: TEST_PLUGIN_IDENTIFIER })).toEqual({
                 status: 'success',
                 pluginInfo: expect.objectContaining({ identifier: TEST_PLUGIN_IDENTIFIER })
@@ -99,13 +111,12 @@ describe('Plugins', () => {
         }
     })
 
-    it('should correctly inspect an available plugin', async () => {
+    it('should correctly inspect an available plugin', async ({ start, getApplication }) => {
         const tmpDir = tempy.directory()
         const dbPath = path.join(tmpDir, 'db')
         const pluginDir = path.join(tmpDir, 'plugins')
         try {
-            const { application } = await main({
-                withoutServer: true,
+            const { createSession } = await start({
                 runtimeConfig: {
                     dbPath,
                     pluginsDir: pluginDir
@@ -113,7 +124,7 @@ describe('Plugins', () => {
             })
             const location = path.join(__dirname, 'test-plugin')
             await copy(location, path.join(pluginDir, 'test-plugin'))
-            const api = await application.api()
+            const { api } = await createSession()
             expect(await api.inspectPlugin({ identifier: TEST_PLUGIN_IDENTIFIER })).toEqual({
                 status: 'success',
                 pluginInfo: expect.objectContaining({ identifier: TEST_PLUGIN_IDENTIFIER })
