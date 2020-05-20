@@ -13,25 +13,39 @@ import LoadingIndicator from "./LoadingIndicator";
 
 import checkImg from "../../assets/images/check.svg";
 import docsImg from "../../assets/images/book-open.svg";
+import installingImg from "../../assets/images/book-open.svg";
+import errorInstallImg from "../../assets/images/warning.svg";
+import installedButErrorImg from "../../assets/images/warning.svg";
+import successInstallImg from "../../assets/images/check.svg";
+import enabledImg from "../../assets/images/cross.svg";
+import enablingImg from "../../assets/images/book-open.svg";
+import errorEnablingImg from "../../assets/images/warning.svg";
+import enabledbutErrorImg from "../../assets/images/warning.svg";
+import successEnablingImg from "../../assets/images/check.svg";
+import disabledImg from "../../assets/images/warning.svg";
+import disablingImg from "../../assets/images/warning.svg";
+import disablingErrorImg from "../../assets/images/warning.svg";
+import disablePendingImg from "../../assets/images/warning.svg";
+import settingsImg from "../../assets/images/settings.svg";
 
 //
 const IMAGES_BY_STATUS: {
   [Status in DisplayedPluginInfo["status"]]: string;
 } = {
   available: checkImg,
-  installing: "",
-  "could-not-install": "",
-  "installed-but-errored": "",
-  "successfully-installed": "",
-  enabled: "",
-  enabling: "",
-  "could-not-enable": "",
-  "enabled-but-errored": "",
-  "successfully-enabled": "",
-  disabled: "",
-  disabling: "",
-  "could-not-disable": "",
-  "disable-pending": "",
+  installing: installingImg,
+  "could-not-install": errorInstallImg,
+  "installed-but-errored": installedButErrorImg,
+  "successfully-installed": successInstallImg,
+  enabled: enabledImg,
+  enabling: enablingImg,
+  "could-not-enable": errorEnablingImg,
+  "enabled-but-errored": enabledbutErrorImg,
+  "successfully-enabled": successEnablingImg,
+  disabled: disabledImg,
+  disabling: disablingImg,
+  "could-not-disable": disablingErrorImg,
+  "disable-pending": disablePendingImg,
 };
 
 const StyledPluginBox = styled.div`
@@ -94,6 +108,15 @@ const PluginActionLink = styled.a`
   background-repeat: no-repeat;
   background-position: center;
 `;
+const PluginSettingsIcon = styled.div`
+  width: 20px;
+  height: 20px;
+  margin-left: 10px;
+  background-image: url(${settingsImg});
+  background-size: 18px;
+  background-repeat: no-repeat;
+  background-position: center;
+`;
 
 export interface PluginBoxProps {
   services: Pick<Services, "router">;
@@ -112,15 +135,21 @@ export default function PluginBox(props: PluginBoxProps) {
     <StyledPluginBox>
       <PluginLogo></PluginLogo>
       <PluginBody>
-        <PluginTitle>
-          <RouteLink
-            services={props.services}
-            route="pluginSettings"
-            params={{ identifier: plugin.identifier }}
-          >
+        {status === "available" ? (
+          <PluginTitle>
             {plugin.name}
-          </RouteLink>
-        </PluginTitle>
+          </PluginTitle>
+          ) :(
+          <PluginTitle>
+            <RouteLink
+              services={props.services}
+              route="pluginSettings"
+              params={{ identifier: plugin.identifier }}
+            >
+              {plugin.name}
+            </RouteLink>
+          </PluginTitle>
+          )}
         <PluginDescription>{plugin.description}</PluginDescription>
       </PluginBody>
       <PluginActions>
@@ -133,7 +162,7 @@ export default function PluginBox(props: PluginBoxProps) {
               onClick={props.onInstall}
             ></PluginAction>
           )}
-          {status === "installing" && <LoadingIndicator />}
+          {status === "installing" && (<LoadingIndicator />)}
           {status === "installed-but-errored" && (
             <PluginAction
               title={`Installed, but there was an error starting it`}
@@ -147,10 +176,24 @@ export default function PluginBox(props: PluginBoxProps) {
             ></PluginAction>
           )}
           {status === "successfully-installed" && (
-            <PluginAction
-              title={`Successfuly installed`}
-              status={status}
-            ></PluginAction>
+            <div>
+              <PluginAction
+                title={`Successfuly installed`}
+                status={status}
+              ></PluginAction>
+            </div>
+          )}
+
+          {status === "successfully-installed" || status === "enabled" && (
+            <div>
+              <RouteLink
+                  services={props.services}
+                  route="pluginSettings"
+                  params={{ identifier: plugin.identifier }}
+                >
+                  <PluginSettingsIcon/>
+              </RouteLink>
+            </div>
           )}
 
           {/* Enabling */}
@@ -170,14 +213,16 @@ export default function PluginBox(props: PluginBoxProps) {
 
           {/* Disabling */}
           {status === "enabled" && (
-            <PluginAction
-              title={`Disable`}
-              status={status}
-              onClick={props.onDisable}
-            ></PluginAction>
+            <div>
+              <PluginAction
+                title={`Disable`}
+                status={status}
+                onClick={props.onDisable}
+              ></PluginAction>
+            </div>
           )}
           {status === "disabling" && (
-            <PluginAction title={`Disabling...`} status={status}></PluginAction>
+            <PluginAction title={`Disabling...`} status={status}><LoadingIndicator/></PluginAction>
           )}
           {status === "could-not-disable" && (
             <PluginAction
@@ -189,7 +234,7 @@ export default function PluginBox(props: PluginBoxProps) {
             <PluginAction
               title={`Restart Storex Hub to disable plugin`}
               status={status}
-            ></PluginAction>
+            ><LoadingIndicator/></PluginAction>
           )}
 
           {/* State-independent */}

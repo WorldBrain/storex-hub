@@ -18,6 +18,8 @@ import { Services } from "../../../services/types";
 
 const StyledPlugins = styled.div`
   display: flex;
+  align-items: center;
+   justify-content: center;
 `;
 
 const LeftPane = styled.div`
@@ -31,7 +33,7 @@ const LeftPaneItem = styled.div<{ active?: boolean }>`
 `;
 
 const MainArea = styled.div`
-  margin-right: ${rightPageMargin};
+  margin-right: 0;
 `;
 
 export default function PluginOverview(props: {
@@ -46,7 +48,7 @@ export default function PluginOverview(props: {
         subtext="You must trust the plugins you install. They will be able to read all
             data you store in StorexHub."
       />
-      <Heading text="🎉 New or updated plugins" />
+      <Heading text="🎉 New plugins" />
       <CtaBox
         description="Learn how to develop &amp; install your own plugins!"
         externalHref="https://worldbrain.github.io/storex-docs/#/storex-hub/"
@@ -107,10 +109,10 @@ export default function PluginOverview(props: {
   return (
     <Margin top={5}>
       <StyledPlugins>
-        <LeftPane>
-          {/* <LeftPaneItem active={true}>Available</LeftPaneItem> */}
-          {/* <LeftPaneItem>Installed</LeftPaneItem> */}
-        </LeftPane>
+        {/*<LeftPane>
+           <LeftPaneItem active={true}>Available</LeftPaneItem>
+          {/* <LeftPaneItem>Installed</LeftPaneItem> 
+        </LeftPane>*/}
         <MainArea>
           {props.state.loadState === "error" && (
             <AbsenceText>

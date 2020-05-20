@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import logo from "./storex-logo.png";
+import backIcon from "../../assets/images/backIcon.svg";
 import {
   fontSizes,
   headerHeight,
@@ -21,11 +22,12 @@ const StyledHeader = styled.div`
 `;
 const HeaderLeft = styled.div`
   display: flex;
-  width: ${leftPaneSize};
   height: ${headerHeight};
   align-items: center;
   justify-content: center;
   padding-left: ${leftPageMargin};
+  margin-right: 30px;
+
 
   img {
     width: auto;
@@ -93,7 +95,7 @@ export default class Header extends React.Component<HeaderProps> {
           )}
           {backLink && (
             <RouteLink services={services} {...backLink}>
-              &lt; Go Back
+              <img src={backIcon} alt="Go Back" />
             </RouteLink>
           )}
         </HeaderLeft>

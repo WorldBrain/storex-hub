@@ -15,7 +15,7 @@ export const fontFamilies = {
 
 export const headerHeight = "80px";
 export const leftPaneSize = "360px";
-export const leftPageMargin = "60px";
+export const leftPageMargin = "150px";
 export const rightPageMargin = "60px";
 
 export const colors = {
