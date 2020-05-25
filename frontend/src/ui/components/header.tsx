@@ -104,7 +104,11 @@ export default class Header extends React.Component<HeaderProps> {
           )}
         </HeaderLeft>
         <HeaderMenu>
-          <HeaderMenuItem active={true}><a target="_blank" href="https://wrldbra.in/storex_tutorials">Tutorials</a></HeaderMenuItem>
+          <HeaderMenuItem active={true}>
+            <a target="_blank" href="https://wrldbra.in/storex_tutorials">
+              Tutorials
+            </a>
+          </HeaderMenuItem>
           {/* <HeaderMenuItem>Settings</HeaderMenuItem> */}
         </HeaderMenu>
       </StyledHeader>

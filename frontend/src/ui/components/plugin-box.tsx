@@ -5,7 +5,7 @@ import RouteLink from "./route-link";
 import { Services } from "../../services/types";
 import { DisplayedPluginInfo } from "../types/plugins";
 import { stat } from "fs";
-import LoadingIndicator from "./LoadingIndicator";
+import LoadingIndicator from "./loading-indicator";
 
 // importing images
 
@@ -136,10 +136,8 @@ export default function PluginBox(props: PluginBoxProps) {
       <PluginLogo></PluginLogo>
       <PluginBody>
         {status === "available" ? (
-          <PluginTitle>
-            {plugin.name}
-          </PluginTitle>
-          ) :(
+          <PluginTitle>{plugin.name}</PluginTitle>
+        ) : (
           <PluginTitle>
             <RouteLink
               services={props.services}
@@ -149,7 +147,7 @@ export default function PluginBox(props: PluginBoxProps) {
               {plugin.name}
             </RouteLink>
           </PluginTitle>
-          )}
+        )}
         <PluginDescription>{plugin.description}</PluginDescription>
       </PluginBody>
       <PluginActions>
@@ -162,7 +160,7 @@ export default function PluginBox(props: PluginBoxProps) {
               onClick={props.onInstall}
             ></PluginAction>
           )}
-          {status === "installing" && (<LoadingIndicator />)}
+          {status === "installing" && <LoadingIndicator />}
           {status === "installed-but-errored" && (
             <PluginAction
               title={`Installed, but there was an error starting it`}
@@ -184,17 +182,18 @@ export default function PluginBox(props: PluginBoxProps) {
             </div>
           )}
 
-          {status === "successfully-installed" || status === "enabled" && (
-            <div>
-              <RouteLink
+          {status === "successfully-installed" ||
+            (status === "enabled" && (
+              <div>
+                <RouteLink
                   services={props.services}
                   route="pluginSettings"
                   params={{ identifier: plugin.identifier }}
                 >
-                  <PluginSettingsIcon/>
-              </RouteLink>
-            </div>
-          )}
+                  <PluginSettingsIcon />
+                </RouteLink>
+              </div>
+            ))}
 
           {/* Enabling */}
           {status === "disabled" && (
@@ -222,7 +221,9 @@ export default function PluginBox(props: PluginBoxProps) {
             </div>
           )}
           {status === "disabling" && (
-            <PluginAction title={`Disabling...`} status={status}><LoadingIndicator/></PluginAction>
+            <PluginAction title={`Disabling...`} status={status}>
+              <LoadingIndicator />
+            </PluginAction>
           )}
           {status === "could-not-disable" && (
             <PluginAction
@@ -234,7 +235,9 @@ export default function PluginBox(props: PluginBoxProps) {
             <PluginAction
               title={`Restart Storex Hub to disable plugin`}
               status={status}
-            ><LoadingIndicator/></PluginAction>
+            >
+              <LoadingIndicator />
+            </PluginAction>
           )}
 
           {/* State-independent */}

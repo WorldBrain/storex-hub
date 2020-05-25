@@ -19,8 +19,8 @@ import { Services } from "../../../services/types";
 const StyledPlugins = styled.div`
   display: flex;
   align-items: center;
-   justify-content: center;
-   margin-top: 100px;
+  justify-content: center;
+  margin-top: 100px;
 `;
 
 const LeftPane = styled.div`
@@ -108,20 +108,20 @@ export default function PluginOverview(props: {
   };
 
   return (
-      <StyledPlugins>
-        {/*<LeftPane>
+    <StyledPlugins>
+      {/*<LeftPane>
            <LeftPaneItem active={true}>Available</LeftPaneItem>
           {/* <LeftPaneItem>Installed</LeftPaneItem> 
         </LeftPane>*/}
-        <MainArea>
-          {props.state.loadState === "error" && (
-            <AbsenceText>
-              An error occurred while loading plugin overview
-              {props.state.loadError && `: ${props.state.loadError}`}
-            </AbsenceText>
-          )}
-          {props.state.loadState === "success" && renderContent()}
-        </MainArea>
-      </StyledPlugins>
+      <MainArea>
+        {props.state.loadState === "error" && (
+          <AbsenceText>
+            An error occurred while loading plugin overview
+            {props.state.loadError && `: ${props.state.loadError}`}
+          </AbsenceText>
+        )}
+        {props.state.loadState === "success" && renderContent()}
+      </MainArea>
+    </StyledPlugins>
   );
 }
