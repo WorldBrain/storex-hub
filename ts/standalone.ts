@@ -11,17 +11,26 @@ export async function standalone() {
         process.env.NODE_ENV = 'production'
     }
 
+    const autoLauncher = new AutoLaunch({
+        name: 'Storex Hub',
+        path: process.argv[0],
+    })
+
     const portNumber = getPortNumber()
-    if (await tcpPortUsed.check(portNumber)) {
-        await open(`http://localhost:${portNumber}/management`)
+    const alreadyRunning = await tcpPortUsed.check(portNumber)
+    const isFirstRun = !await autoLauncher.isEnabled()
+    const openManagementUI = () => {
+        if (process.env.NO_BROWSER !== 'true') {
+            open(`http://localhost:${portNumber}/management`)
+        }
+    }
+
+    if (alreadyRunning) {
+        await openManagementUI()
         process.exit(0)
     }
 
     if (process.env.NO_AUTO_LAUNCH !== 'true') {
-        const autoLauncher = new AutoLaunch({
-            name: 'Storex Hub',
-            path: process.argv[0],
-        })
         autoLauncher.enable()
     }
 
@@ -37,6 +46,10 @@ export async function standalone() {
         runtimeConfig: { dbPath: dbFilePath, pluginsDir },
         frontendDir
     })
+
+    if (isFirstRun) {
+        openManagementUI()
+    }
 }
 
 if (require.main === module) {

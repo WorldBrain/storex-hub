@@ -1,5 +1,11 @@
 #!/bin/bash
 
+version=`cat package.json | json pluck --attr version`
+if [ $? -ne 0 -o -z "$version" ]; then
+    echo "ERROR: Could not extract version from package.json"
+    exit 1
+fi
+
 if [ "$SKIP_TSC" != "true" ]; then
     tsc || exit 1
 fi
@@ -57,9 +63,9 @@ for target in $targets; do
     if [ "$SKIP_PACKAGING" != "true" ]; then
         pushd build
         if [ "$target" != "win" ]; then
-            tar -czf storex-hub-$target.tgz storex-hub-$target
+            tar -czf storex-hub-$target-$version.tgz storex-hub-$target
         else
-            zip -r storex-hub-$target.zip storex-hub-$target
+            zip -r storex-hub-$target-$version.zip storex-hub-$target
         fi
         popd
     fi
