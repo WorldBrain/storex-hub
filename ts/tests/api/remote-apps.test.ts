@@ -15,7 +15,7 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
             callbacks: {
                 handleRemoteOperation: async (options) => {
                     operations.push(options)
-                    return { result: ['foo', 'bla'] }
+                    return { status: 'success', result: ['foo', 'bla'] }
                 }
             }
         })
@@ -71,10 +71,11 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
                         }
                     }
 
-                    return { subscriptionId }
+                    return { status: 'success', subscriptionId }
                 },
                 handleUnsubscription: async ({ subscriptionId }) => {
                     delete memexSubscriptions[subscriptionId]
+                    return { status: 'success' }
                 }
             }
         })
