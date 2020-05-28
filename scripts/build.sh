@@ -43,9 +43,19 @@ for target in $targets; do
             --directory=./node_modules/sqlite3 \
             --target_platform=${platform} \
             --target_arch='x64' \
-            --target=${node_version:1}
+            --target=${node_version:1} > /dev/null
 
-        cp node_modules/sqlite3/lib/binding/node-v64-$platform-x64/node_sqlite3.node $output_dir
+        sqlite_module_count=`ls -1 node_modules/sqlite3/lib/binding/node-*-$platform-x64/ | wc -l`
+        if [ "$sqlite_module_count" -eq 0 ]; then
+            echo "Could not build the SQLite module for platform '$platform'" >&2
+            exit 1
+        fi
+        if [ "$sqlite_module_count" -gt 1 ]; then
+            echo "Found built SQLite modules for multiple node versions ('$platform'). Please delete old one."
+            exit 1
+        fi
+
+        cp node_modules/sqlite3/lib/binding/node-*-$platform-x64/node_sqlite3.node $output_dir
 
         ./node_modules/.bin/node-pre-gyp install \
             --directory=./node_modules/bcrypt \
