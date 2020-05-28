@@ -42,22 +42,31 @@ export class AppEvents {
         return subscriptionId
     }
 
-    async subscribeToEvent(identifiedApp: IdentifiedApp, options: api.SubscribeToEventOptions_v0): Promise<api.SubscribeToEventResult_v0> {
+    async subscribeAppToEvent(identifiedApp: IdentifiedApp, options: api.SubscribeToEventOptions_v0): Promise<api.SubscribeToEventResult_v0> {
         const { request } = options
         const remoteSession = this.remoteSessions.getRemoteSession(identifiedApp.identifier)
         if (!remoteSession) {
             throw new Error(`App '${identifiedApp.identifier}' wanted to subscribe to event, but doesn't have a remote session`)
         }
 
+        return this.subscribeToEvent(options, async ({ event }) => {
+            return remoteSession.handleEvent!({ event })
+        })
+    }
+
+    async subscribeToEvent(options: api.SubscribeToEventOptions_v0, handler: api.AllStorexHubCallbacks_v0['handleEvent']): Promise<api.SubscribeToEventResult_v0> {
+        const { request } = options
         if (isRemoteSubscriptionRequest(request)) {
             return this.subsribeToRemoteEvent(request, {
-                handleEvent: async ({ event }) => remoteSession.handleEvent?.({ event }),
+                handleEvent: async ({ event }) => {
+                    handler({ event })
+                },
             })
         }
 
         if (request.type === 'app-availability-changed') {
-            const handler = (event: { app: string, availability: boolean }) => {
-                return remoteSession.handleEvent?.({
+            const wrappedHandler = (event: { app: string, availability: boolean }) => {
+                return handler({
                     event: {
                         type: 'app-availability-changed',
                         ...event,
@@ -65,9 +74,9 @@ export class AppEvents {
                 })
             }
 
-            this.events.addListener('app-availability-changed', handler)
+            this.events.addListener('app-availability-changed', wrappedHandler)
             const subscriptionId = this._registerSubscription(async () => {
-                this.events.removeListener('app-availability-changed', handler)
+                this.events.removeListener('app-availability-changed', wrappedHandler)
             })
             return { status: 'success', subscriptionId }
         }

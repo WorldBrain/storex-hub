@@ -20,8 +20,8 @@ export class RemoteSessions {
         delete this.remoteSessions[app.identifier]
     }
 
-    getRemoteSession = (appIdentifier: string): StorexHubCallbacks_v0 | null => {
-        return this.remoteSessions[appIdentifier]
+    getRemoteSession = (appIdentifier: string): AllStorexHubCallbacks_v0 | null => {
+        return this.remoteSessions[appIdentifier] ?? null
     }
 
     executeCallback = async <MethodName extends keyof AllStorexHubCallbacks_v0>(

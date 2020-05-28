@@ -3,12 +3,14 @@ import { SystemStorageModules, Storage } from "./types";
 import { AppStorage } from "./modules/apps";
 import { registerModuleMapCollections } from "@worldbrain/storex-pattern-modules";
 import { PluginManagementStorage } from "../plugins/storage";
+import { RecipeStorage } from "./modules/recipes";
 
 export async function createStorage(options: { storageBackend: StorageBackend }): Promise<Storage> {
     const storageManager = new StorageManager({ backend: options.storageBackend })
     const systemModules: SystemStorageModules = {
         apps: new AppStorage({ storageManager }),
         plugins: new PluginManagementStorage({ storageManager }),
+        recipes: new RecipeStorage({ storageManager })
     }
     registerModuleMapCollections(storageManager.registry, systemModules as any)
 

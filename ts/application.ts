@@ -13,6 +13,7 @@ import { PluginManager } from './plugins/manager';
 import { AppStorages } from './storage/apps';
 import { RemoteSessions } from './remote-sessions';
 import { AppEvents } from './app-events';
+import { RecipeManager } from './recipes';
 
 export interface ApplicationOptions {
     accessTokenManager: AccessTokenManager
@@ -30,6 +31,7 @@ export class Application {
     pluginManager: PluginManager
     remoteSessions: RemoteSessions
     appEvents: AppEvents
+    recipes: RecipeManager
 
     constructor(private options: ApplicationOptions) {
         this.storage = createStorage({
@@ -58,6 +60,10 @@ export class Application {
         })
         this.remoteSessions = new RemoteSessions()
         this.appEvents = new AppEvents(this.remoteSessions)
+        this.recipes = new RecipeManager({
+            getRecipeStorage: async () => (await this.storage).systemModules.recipes,
+            appEvents: this.appEvents,
+        })
     }
 
     async setup() {
@@ -71,6 +77,7 @@ export class Application {
             appStorages: this.appStorages,
             remoteSessions: this.remoteSessions,
             appEvents: this.appEvents,
+            recipes: this.recipes,
             getStorage: () => this.storage,
             destroySession: async () => {
                 if (session.identifiedApp) {

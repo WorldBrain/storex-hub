@@ -11,6 +11,7 @@ import { IdentifiedApp } from './types';
 import { RemoteSessions } from "./remote-sessions";
 import { AppStorages } from "./storage/apps";
 import { AppEvents } from "./app-events";
+import { RecipeManager } from "./recipes";
 
 export interface SessionOptions {
     accessTokenManager: AccessTokenManager
@@ -18,6 +19,7 @@ export interface SessionOptions {
     appStorages: AppStorages
     remoteSessions: RemoteSessions
     appEvents: AppEvents
+    recipes: RecipeManager
     getStorage: () => Promise<Storage>
 
     destroySession: () => Promise<void>
@@ -152,7 +154,7 @@ export class Session implements api.StorexHubApi_v0 {
         if (!this.identifiedApp) {
             return { status: 'not-identified' }
         }
-        return this.options.appEvents.subscribeToEvent(this.identifiedApp, options)
+        return this.options.appEvents.subscribeAppToEvent(this.identifiedApp, options)
     }
 
     unsubscribeFromEvent: api.StorexHubApi_v0['unsubscribeFromEvent'] = async (options) => {
@@ -288,7 +290,7 @@ export class Session implements api.StorexHubApi_v0 {
     }
 
     createRecipe: api.StorexHubApi_v0['createRecipe'] = async options => {
-        throw new Error(`Not implementeed`)
+        return this.options.recipes.createRecipe(options.recipe)
     }
 }
 
