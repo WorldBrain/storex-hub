@@ -39,13 +39,15 @@ export default createMultiApiTestSuite('Integration Recipes', ({ it }) => {
                     collection: 'tags',
                     where: { name: 'share' }
                 },
-                execute: [
-                    {
-                        app: 'test.integration',
-                        call: 'test',
-                        args: { tag: { $logic: '$tag' } }
-                    }
-                ]
+                on: {
+                    add: [
+                        {
+                            app: 'test.integration',
+                            call: 'test',
+                            args: { tag: { $logic: '$tag' } }
+                        }
+                    ]
+                }
             }
         })
         await sourceApp.emitEvent({

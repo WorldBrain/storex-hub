@@ -45,19 +45,21 @@ export class RecipeManager {
         const { select } = recipe
         for (const change of info.changes) {
             if (change.type === 'create') {
-                await this._processObject(recipe, { [select.placeholder]: change.values })
+                await this._processObject(recipe, 'add', { [select.placeholder]: change.values })
             }
         }
     }
 
-    async _processObject(recipe: RecipeDefinition, context: { [key: string]: any }) {
+    async _processObject(recipe: RecipeDefinition, event: keyof RecipeDefinition['on'], context: { [key: string]: any }) {
         context = { ...context }
-        for (const actionDefinition of recipe.execute) {
+        for (const actionDefinition of recipe.on[event] ?? []) {
             const logic = new UserLogic({ definition: { literal: actionDefinition } })
             const action: RecipeAction = logic.evaluate(context)
-            const args = { ...action }
-            delete args.app
-            await this.options.remoteSessions.executeCallback(action.app, 'handleRemoteCall', args)
+            if ('call' in action) {
+                const args = { ...action }
+                delete args.app
+                await this.options.remoteSessions.executeCallback(action.app, 'handleRemoteCall', args)
+            }
         }
     }
 }
