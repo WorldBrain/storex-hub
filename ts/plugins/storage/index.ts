@@ -2,6 +2,7 @@ import * as path from 'path'
 import { StorageModule, StorageModuleConfig } from "@worldbrain/storex-pattern-modules";
 import STORAGE_VERSIONS from "../../storage/versions";
 import { PluginInfo } from '@worldbrain/storex-hub-interfaces/lib/plugins';
+import { InstalledPluginMetadata } from '../types';
 
 export class PluginManagementStorage extends StorageModule {
     getConfig = (): StorageModuleConfig => ({
@@ -54,7 +55,7 @@ export class PluginManagementStorage extends StorageModule {
         return ((await this.operation('findPluginByIdentifier', { identifier })) || null)?.info
     }
 
-    async getAllPluginMetadata(): Promise<any[]> {
+    async getAllPluginMetadata(): Promise<InstalledPluginMetadata[]> {
         const records: any[] = (await this.operation('getAllPlugins', {}))
         return records
     }

@@ -30,7 +30,7 @@
     "@worldbrain/storex-middleware-change-watcher": "^0.1.1",
     "@worldbrain/storex-pattern-modules": "^0.4.0",
     "auto-launch": "^5.0.5",
-    "bcrypt": "^4.0.1",
+    "bcryptjs": "^2.4.3",
     "crypto-random-string": "^3.2.0",
     "del": "^5.1.0",
     "fake-indexeddb": "^2.0.4",
@@ -56,7 +56,7 @@
     "yargs": "^15.3.1"
   },
   "devDependencies": {
-    "@types/bcrypt": "^3.0.0",
+    "@types/bcryptjs": "^2.4.2",
     "@types/chai": "^4.0.6",
     "@types/events": "^1.2.0",
     "@types/fs-extra": "^5.0.2",

@@ -25,7 +25,8 @@ export async function createHttpServer(application: Application, options: {
     if (options.frontendDir) {
         app.use(serve({
             rootDir: options.frontendDir,
-            rootPath: '/management'
+            rootPath: '/management',
+            notFoundFile: 'index.html'
         }))
     }
 

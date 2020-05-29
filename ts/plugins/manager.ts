@@ -124,6 +124,13 @@ export class PluginManager {
     }
 
     async _findPluginByIdentifier(identifier: string): Promise<null | { location: string, pluginInfo: PluginInfo }> {
+        const installedPlugins = await this.pluginStorage.getAllPluginMetadata()
+        for (const installedPlugin of installedPlugins) {
+            if (installedPlugin.identifier === identifier) {
+                return { location: installedPlugin.path, pluginInfo: installedPlugin.info }
+            }
+        }
+
         if (!this.options.pluginsDir) {
             return null
         }

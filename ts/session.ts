@@ -225,8 +225,11 @@ export class Session implements api.StorexHubApi_v0 {
 
         const storage = await this.options.getStorage()
         let appId = options.app
-            ? (await storage.systemModules.apps.getApp(options.app)).id
+            ? (await storage.systemModules.apps.getApp(options.app))?.id
             : this.identifiedApp.id as number
+        if (!appId) {
+            return { status: 'app-not-found' }
+        }
 
         const existingSettings = await storage.systemModules.apps.getAppSettings(appId)
         const settings = options.keys === 'all'

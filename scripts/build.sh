@@ -56,15 +56,6 @@ for target in $targets; do
         fi
 
         cp node_modules/sqlite3/lib/binding/node-*-$platform-x64/node_sqlite3.node $output_dir
-
-        ./node_modules/.bin/node-pre-gyp install \
-            --directory=./node_modules/bcrypt \
-            --target_platform=${platform} \
-            --target_arch='x64' \
-            --target=${node_version:1} \
-            --build-from-source
-
-        cp node_modules/bcrypt/lib/binding/napi-v3/bcrypt_lib.node $output_dir
     fi
 
     rm -rf $output_dir/frontend 2> /dev/null

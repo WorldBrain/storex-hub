@@ -91,7 +91,7 @@ export class AppStorage extends StorageModule {
                     collection: 'appSettingsDescription',
                     args: [
                         { app: '$appId:pk' },
-                        { description: '$settingsDescription:json' }
+                        { description: '$description:json' }
                     ],
                 },
                 createSettings: {

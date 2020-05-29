@@ -5,23 +5,24 @@ import { PluginInfo } from '@worldbrain/storex-hub-interfaces/lib/plugins';
 export async function insertStorexHubFixtures(createClient: () => Promise<StorexHubApi_v0>, options: { fs: typeof fsModule }) {
     const { fs } = options
     const management = await createClient()
-    fs.mkdirSync('/plugins/org.arweave')
+    const arweavePluginIdentifier = 'org.arweave'
+    fs.mkdirSync(`/plugins/${arweavePluginIdentifier}`)
     const arweavePluginInfo: PluginInfo = {
         version: '0.0.1',
         name: 'Arweave',
-        identifier: 'org.arweave',
+        identifier: `${arweavePluginIdentifier}`,
         mainPath: 'main.js',
         entryFunction: 'main',
         siteUrl: 'https://www.arweave.org/',
         description: 'Provides permanent, censorship-resistant storage for your data',
     }
-    fs.writeFileSync('/plugins/org.arweave/manifest.json', JSON.stringify(arweavePluginInfo))
+    fs.writeFileSync(`/plugins/${arweavePluginIdentifier}/manifest.json`, JSON.stringify(arweavePluginInfo))
     await management.installPlugin({
-        identifier: 'org.arweave'
+        identifier: `${arweavePluginIdentifier}`
     })
 
     const arweave = await createClient()
-    await arweave.registerApp({ name: 'org.arweave', remote: true, identify: true })
+    await arweave.registerApp({ name: `${arweavePluginIdentifier}`, remote: true, identify: true })
     arweave.describeAppSettings({
         description: {
             layout: {
