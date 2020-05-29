@@ -72,6 +72,46 @@ export default createMultiApiTestSuite('Integration Recipes', ({ it }) => {
         })
     })
 
+    it('should ignore remote creates not matching a selector', async ({ createSession }) => {
+        const { sourceApp, integrationApp, callsExecuted } = await setupTest({ createSession })
+        await integrationApp.createRecipe({
+            integrateExisting: false,
+            recipe: {
+                select: {
+                    placeholder: 'tag',
+                    app: 'test.source',
+                    remote: true,
+                    collection: 'tags',
+                    where: { name: 'share' }
+                },
+                on: {
+                    add: [
+                        {
+                            app: 'test.integration',
+                            call: 'test',
+                            args: { tag: { $logic: '$tag' } }
+                        }
+                    ]
+                }
+            }
+        })
+        await sourceApp.emitEvent({
+            event: {
+                type: 'storage-change',
+                info: {
+                    changes: [
+                        { type: 'create', collection: 'tags', pk: 'one', values: { name: 'bla' } }
+                    ]
+                }
+            }
+        })
+
+        expect(await Promise.race([
+            callsExecuted[0].then(result => ({ type: 'success', result })),
+            new Promise(resolve => setTimeout(resolve, 1000)).then(() => ({ type: 'timeout' }))
+        ])).toEqual({ type: 'timeout' })
+    })
+
     it('should execute an operation when a remote change matching a selector is detected', async ({ createSession }) => {
         const { sourceApp, integrationApp, callsExecuted } = await setupTest({ createSession })
         await integrationApp.createRecipe({
