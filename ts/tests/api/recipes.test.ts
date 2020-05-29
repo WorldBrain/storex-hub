@@ -68,7 +68,7 @@ export default createMultiApiTestSuite('Integration Recipes', ({ it }) => {
         })
         expect(await callsExecuted[0]).toEqual({
             call: 'test',
-            args: { tag: { name: 'share' } }
+            args: { tag: { pk: 'one', values: { name: 'share' } } }
         })
     })
 
