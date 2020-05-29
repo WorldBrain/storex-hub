@@ -62,6 +62,7 @@ export class Application {
         this.appEvents = new AppEvents(this.remoteSessions)
         this.recipes = new RecipeManager({
             getRecipeStorage: async () => (await this.storage).systemModules.recipes,
+            remoteSessions: this.remoteSessions,
             appEvents: this.appEvents,
         })
     }

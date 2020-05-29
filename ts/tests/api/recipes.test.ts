@@ -43,7 +43,7 @@ export default createMultiApiTestSuite('Integration Recipes', ({ it }) => {
                     {
                         app: 'test.integration',
                         call: 'test',
-                        args: { tag: '$tag' }
+                        args: { tag: { $logic: '$tag' } }
                     }
                 ]
             }
@@ -58,9 +58,9 @@ export default createMultiApiTestSuite('Integration Recipes', ({ it }) => {
                 }
             }
         })
-        // expect(callExecuted).toEqual({
-        //     call: 'test',
-        //     args: { tag: { name: 'share' } }
-        // })
+        expect(await callExecuted).toEqual({
+            call: 'test',
+            args: { tag: { name: 'share' } }
+        })
     })
 })
