@@ -50,6 +50,10 @@ export class RecipeManager {
                 for (const pk of change.pks) {
                     await this._processObject(recipe, 'modify', { [select.placeholder]: { pk, updates: change.updates } })
                 }
+            } else if (change.type === 'delete') {
+                for (const pk of change.pks) {
+                    await this._processObject(recipe, 'remove', { [select.placeholder]: { pk } })
+                }
             }
         }
     }

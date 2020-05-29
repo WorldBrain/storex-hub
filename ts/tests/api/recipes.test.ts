@@ -114,4 +114,47 @@ export default createMultiApiTestSuite('Integration Recipes', ({ it }) => {
             args: { tag: { pk: 'two', updates: { name: 'share' } } }
         })
     })
+
+    it('should execute an operation when a remote remove matching a selector is detected', async ({ createSession }) => {
+        const { sourceApp, integrationApp, callsExecuted } = await setupTest({ createSession })
+        await integrationApp.createRecipe({
+            integrateExisting: false,
+            recipe: {
+                select: {
+                    placeholder: 'tag',
+                    app: 'test.source',
+                    remote: true,
+                    collection: 'tags',
+                    where: { name: 'share' }
+                },
+                on: {
+                    remove: [
+                        {
+                            app: 'test.integration',
+                            call: 'test',
+                            args: { tag: { $logic: '$tag' } }
+                        }
+                    ]
+                }
+            }
+        })
+        await sourceApp.emitEvent({
+            event: {
+                type: 'storage-change',
+                info: {
+                    changes: [
+                        { type: 'delete', collection: 'tags', pks: ['one', 'two'], where: { id: { $in: ['one', 'two'] } } }
+                    ]
+                }
+            }
+        })
+        expect(await callsExecuted[0]).toEqual({
+            call: 'test',
+            args: { tag: { pk: 'one' } }
+        })
+        expect(await callsExecuted[1]).toEqual({
+            call: 'test',
+            args: { tag: { pk: 'two' } }
+        })
+    })
 })
