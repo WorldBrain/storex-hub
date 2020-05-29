@@ -46,6 +46,10 @@ export class RecipeManager {
         for (const change of info.changes) {
             if (change.type === 'create') {
                 await this._processObject(recipe, 'add', { [select.placeholder]: change.values })
+            } else if (change.type === 'modify') {
+                for (const pk of change.pks) {
+                    await this._processObject(recipe, 'modify', { [select.placeholder]: { pk, updates: change.updates } })
+                }
             }
         }
     }

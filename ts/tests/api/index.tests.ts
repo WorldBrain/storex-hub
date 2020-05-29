@@ -19,6 +19,7 @@ import { createStorexHubClient, createStorexHubSocketClient } from '../../client
 export type TestSetup<ApiOptions = never, OptionsRequired extends boolean = true, Session = TestSession> = OptionsRequired extends true
     ? { createSession(options: ApiOptions): Promise<Session> }
     : { createSession(options?: ApiOptions): Promise<Session> }
+export type MultiApiTestSetup = TestSetup<MultiApiOptions, true>
 export interface TestSession {
     api: StorexHubApi_v0
     close(): Promise<void>
