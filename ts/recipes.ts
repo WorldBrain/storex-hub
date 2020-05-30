@@ -5,6 +5,7 @@ import { CreateRecipeResult_v0 } from "./public-api";
 import { RecipeStorage } from "./storage/modules/recipes";
 import { AppEvents } from "./app-events";
 import { RemoteSessions } from "./remote-sessions";
+import { matchObject } from './utils/match-object';
 
 export class RecipeManager {
     constructor(private options: {
@@ -45,6 +46,10 @@ export class RecipeManager {
         const { select } = recipe
         for (const change of info.changes) {
             if (change.type === 'create') {
+                if (!matchObject({ object: change.values, filter: recipe.select.where }).matches) {
+                    continue
+                }
+
                 await this._processObject(recipe, 'add', { [select.placeholder]: { pk: change.pk, values: change.values } })
             } else if (change.type === 'modify') {
                 for (const pk of change.pks) {
