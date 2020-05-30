@@ -45,27 +45,29 @@ export class PluginManager {
             }
         }
 
-        if (this.options.pluginsDir) {
-            if (!this.fsModule.existsSync(this.options.pluginsDir)) {
-                return result
+        if (!this.options.pluginsDir || !this.fsModule.existsSync(this.options.pluginsDir)) {
+            return result
+        }
+
+        if (!this.fsModule.existsSync(this.options.pluginsDir)) {
+            return result
+        }
+
+        const pluginDirNames = this.fsModule.readdirSync(this.options.pluginsDir)
+        for (const pluginDirName of pluginDirNames) {
+            const maybePluginInfo = await getPluginInfo(path.join(this.options.pluginsDir, pluginDirName), this.fsModule)
+            if (maybePluginInfo.status !== 'success') {
+                continue
             }
 
-            const pluginDirNames = this.fsModule.readdirSync(this.options.pluginsDir)
-            for (const pluginDirName of pluginDirNames) {
-                const maybePluginInfo = await getPluginInfo(path.join(this.options.pluginsDir, pluginDirName), this.fsModule)
-                if (maybePluginInfo.status !== 'success') {
-                    continue
-                }
+            const existingState = result.state[maybePluginInfo.pluginInfo.identifier]
+            if (existingState) {
+                continue
+            }
 
-                const existingState = result.state[maybePluginInfo.pluginInfo.identifier]
-                if (existingState) {
-                    continue
-                }
-
-                result.plugins.push(maybePluginInfo.pluginInfo)
-                result.state[maybePluginInfo.pluginInfo.identifier] = {
-                    status: 'available',
-                }
+            result.plugins.push(maybePluginInfo.pluginInfo)
+            result.state[maybePluginInfo.pluginInfo.identifier] = {
+                status: 'available',
             }
         }
 

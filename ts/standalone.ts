@@ -35,7 +35,7 @@ export async function standalone() {
     }
 
     const standaloneDirPath = path.dirname(process.argv[0])
-    const frontendDir = process.env.DB_PATH || path.join(standaloneDirPath, 'frontend')
+    const frontendDir = process.env.FRONT_END_DIR || path.join(standaloneDirPath, 'frontend')
     const dbFilePath = process.env.DB_PATH || path.join(standaloneDirPath, 'database')
     const pluginsDir = process.env.PLUGINS_DIR || path.join(standaloneDirPath, 'plugins')
     try {

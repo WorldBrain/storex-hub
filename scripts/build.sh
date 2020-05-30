@@ -7,7 +7,9 @@ if [ $? -ne 0 -o -z "$version" ]; then
 fi
 
 if [ "$SKIP_TSC" != "true" ]; then
+    echo -n "Running tsc... "
     tsc || exit 1
+    echo "done!"
 fi
 
 if [ "$SKIP_FRONTEND_BUILD" != "true" ]; then
