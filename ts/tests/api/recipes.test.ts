@@ -1,25 +1,28 @@
 import expect from 'expect';
 import createResolvable from '@josephg/resolvable'
 import { createMultiApiTestSuite, MultiApiTestSetup } from "./index.tests";
-import { HandleRemoteCallOptions_v0 } from '../../public-api';
+import { HandleRemoteCallOptions_v0, StorexHubCallbacks_v0 } from '../../public-api';
 
 export default createMultiApiTestSuite('Integration Recipes', ({ it }) => {
-    async function setupTest({ createSession }: Pick<MultiApiTestSetup, 'createSession'>) {
+    async function setupTest(options: {
+        createSession: MultiApiTestSetup['createSession'],
+        sourceCallbacks?: StorexHubCallbacks_v0
+    }) {
         let subscriptionCount = 0
-        const { api: sourceApp } = await createSession({
+        const { api: sourceApp } = await options.createSession({
             type: 'websocket', callbacks: {
-                handleSubscription: async () => {
+                handleSubscription: options.sourceCallbacks?.handleSubscription ?? (async () => {
                     return { status: 'success', subscriptionId: (++subscriptionCount).toString() }
-                },
-                handleRemoteOperation: async () => {
+                }),
+                handleRemoteOperation: options.sourceCallbacks?.handleRemoteOperation ?? (async () => {
                     return { status: 'success', result: [] }
-                }
+                })
             }
         })
         await sourceApp.registerApp({ name: 'test.source', identify: true })
 
         const callsExecuted = [createResolvable<HandleRemoteCallOptions_v0>()]
-        const { api: integrationApp } = await createSession({
+        const { api: integrationApp } = await options.createSession({
             type: 'websocket', callbacks: {
                 handleRemoteCall: async (incoming) => {
                     callsExecuted.slice(-1)[0].resolve(incoming)
@@ -195,6 +198,70 @@ export default createMultiApiTestSuite('Integration Recipes', ({ it }) => {
         expect(await callsExecuted[1]).toEqual({
             call: 'test',
             args: { tag: { pk: 'two' } }
+        })
+    })
+
+    it('should execute operations and store them in placeholders', async ({ createSession }) => {
+        let remoteOperationArgs = null
+        const { sourceApp, integrationApp, callsExecuted } = await setupTest({
+            createSession,
+            sourceCallbacks: {
+                handleRemoteOperation: async (options) => {
+                    remoteOperationArgs = options
+                    return { status: 'success', result: { foo: 5, bar: 'test' } }
+                }
+            }
+        })
+        await integrationApp.createRecipe({
+            integrateExisting: false,
+            recipe: {
+                select: {
+                    placeholder: 'tag',
+                    app: 'test.source',
+                    remote: true,
+                    collection: 'tags',
+                    where: { name: 'share' }
+                },
+                on: {
+                    add: [
+                        {
+                            placeholder: 'test',
+                            operation: 'findObject' as 'findObject',
+                            app: 'test.source',
+                            remote: true,
+                            collection: 'test',
+                            where: { foo: 5, tag: { $logic: '$tag' } },
+                        },
+                        {
+                            call: 'test',
+                            app: 'test.integration',
+                            args: { tag: { $logic: '$tag' }, test: { $logic: '$test' } }
+                        }
+                    ]
+                }
+            }
+        })
+        await sourceApp.emitEvent({
+            event: {
+                type: 'storage-change',
+                info: {
+                    changes: [
+                        { type: 'create', collection: 'tags', pk: 'one', values: { name: 'share' } }
+                    ]
+                }
+            }
+        })
+        expect(await callsExecuted[0]).toEqual({
+            call: 'test',
+            args: { test: { foo: 5, bar: 'test' }, tag: { pk: 'one', values: { name: 'share' } } }
+        })
+        expect(remoteOperationArgs).toEqual({
+            sourceApp: '',
+            operation: [
+                'findObject',
+                'test',
+                { foo: 5, tag: { pk: "one", values: { name: 'share' } } }
+            ]
         })
     })
 })

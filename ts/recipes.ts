@@ -39,6 +39,8 @@ export class RecipeManager {
                 }
                 this._processStorageChange(recipe, event.info)
             })
+        } else {
+            throw new Error(`Non-remote selects in recipes are not supported yet.`)
         }
     }
 
@@ -72,6 +74,28 @@ export class RecipeManager {
                 const args = { ...action }
                 delete args.app
                 await this.options.remoteSessions.executeCallback(action.app, 'handleRemoteCall', args)
+            } else if ('operation' in action) {
+                if (!action.remote) {
+                    throw new Error(`Non-remote operations in recipes are not supported yet.`)
+                }
+                if (!['findObject', 'findObjects'].includes(action.operation)) {
+                    throw new Error(`Unsupported operation found in recipe: ${action.operation}`)
+                }
+
+                const result = await this.options.remoteSessions.executeCallback(action.app, 'handleRemoteOperation', {
+                    operation: [action.operation, action.collection, action.where],
+                    sourceApp: '',
+                })
+                if (result.status !== 'success') {
+                    throw new Error(`Error status received while trying to execute remote operation: ${result.status}`)
+                }
+                const callbackResult = result.result
+                if (callbackResult.status !== 'success') {
+                    throw new Error(`Error status received while trying to execute remote operation: ${callbackResult.status}`)
+                }
+                if (action.placeholder) {
+                    context[action.placeholder] = callbackResult.result
+                }
             }
         }
     }
