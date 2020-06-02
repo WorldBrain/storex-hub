@@ -35,7 +35,11 @@ export async function createStorexHubSocketClient(socket: SocketIOClient.Socket,
     if (options?.callbacks) {
         const callbacks = options.callbacks
         socket.on('request', async (message: any) => {
-            const response = await callbacks[message.methodName](message.methodOptions)
+            const callback = callbacks[message.methodName]
+            if (!callback) {
+                return { status: 'not-implemented' }
+            }
+            const response = await callback(message.methodOptions)
             socket.emit('response', {
                 requestId: message.requestId,
                 response
