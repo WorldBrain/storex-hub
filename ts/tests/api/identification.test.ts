@@ -26,15 +26,15 @@ export default createApiTestSuite('Application registration and identification',
         expect(await app.getSessionInfo()).toEqual(IDENTIFIED_SESSION_INFO)
     })
 
-    it('should not register an already existing app', async ({ createSession }) => {
-        const { api: app } = await createSession()
-        await app.registerApp({ name: 'contacts' })
+    it('should generate a new access token when registering an already existing app', async ({ createSession }) => {
+        const { api: firstApp } = await createSession()
+        await firstApp.registerApp({ name: 'contacts' })
 
-        const result = await ((await createSession()).api).registerApp({ name: 'contacts' })
-        expect(result).toEqual({
-            status: 'app-already-exists', // TODO: Tricky security issue, since this leaks info about installed apps
-        })
-        expect(await app.getSessionInfo()).toEqual(ANONYMOUS_SESSION_INFO)
+        const secondApp = (await createSession()).api;
+        const result = await secondApp.registerApp({ name: 'contacts', identify: true })
+        expect(result).toEqual({ status: 'success', accessToken: 'token-2' })
+        expect(await secondApp.getSessionInfo()).toEqual(IDENTIFIED_SESSION_INFO)
+        expect(await firstApp.getSessionInfo()).toEqual(ANONYMOUS_SESSION_INFO)
     })
 
     it('should be able to identify an app with an access key', async ({ createSession }) => {

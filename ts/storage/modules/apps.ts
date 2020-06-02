@@ -17,6 +17,15 @@ export class AppStorage extends StorageModule {
                         isRemote: { type: 'boolean', optional: true }
                     }
                 },
+                appAccessKey: {
+                    version: STORAGE_VERSIONS[2],
+                    fields: {
+                        hash: { type: 'string' },
+                    },
+                    relationships: [
+                        { childOf: 'app' }
+                    ]
+                },
                 appSchema: {
                     version: STORAGE_VERSIONS[0],
                     fields: {
@@ -54,6 +63,15 @@ export class AppStorage extends StorageModule {
                     operation: 'findObject',
                     collection: 'app',
                     args: { identifier: '$identifier:string' }
+                },
+                createAccessKey: {
+                    operation: 'createObject',
+                    collection: 'appAccessKey',
+                },
+                findAccessKeyByIdentifier: {
+                    operation: 'findObjects',
+                    collection: 'appAccessKey',
+                    args: { app: '$appId:pk' }
                 },
                 createSchema: {
                     operation: 'createObject',
@@ -121,6 +139,25 @@ export class AppStorage extends StorageModule {
 
     async getApp(identifier: string) {
         return this.operation('findAppByIdentifier', { identifier })
+    }
+
+    async addAccessKey(params: { appId: string | number, hash: string }) {
+        await this.operation('createAccessKey', { app: params.appId, hash: params.hash })
+    }
+
+    async getAppWithAccessKeys(params: { appIdentifier: string }): Promise<{ app: any, accessKeys: Array<{ hash: string }> } | null> {
+        const app = await this.getApp(params.appIdentifier)
+        if (!app) {
+            return null
+        }
+        const keys = await this.operation('findAccessKeyByIdentifier', { appId: app.id })
+        return {
+            app,
+            accessKeys: [
+                { hash: app.accessKeyHash },
+                ...keys
+            ]
+        }
     }
 
     async updateSchema(appId: string | number, schema: AppSchema) {

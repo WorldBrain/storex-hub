@@ -39,16 +39,20 @@ export class Session implements api.StorexHubApi_v0 {
     registerApp: api.StorexHubApi_v0['registerApp'] = async (options) => {
         const storage = await this.options.getStorage()
         const existingApp = await storage.systemModules.apps.getApp(options.name)
-        if (existingApp) {
-            return { status: 'app-already-exists' }
-        }
 
         const accessToken = await this.options.accessTokenManager.createToken()
-        await storage.systemModules.apps.createApp({
-            identifier: options.name,
-            accessKeyHash: accessToken.hashedToken,
-            isRemote: options.remote,
-        })
+        if (!existingApp) {
+            await storage.systemModules.apps.createApp({
+                identifier: options.name,
+                accessKeyHash: accessToken.hashedToken,
+                isRemote: options.remote,
+            })
+        } else {
+            await storage.systemModules.apps.addAccessKey({
+                appId: existingApp.id,
+                hash: accessToken.hashedToken,
+            })
+        }
         if (options.identify) {
             await this.identifyApp({ name: options.name, accessToken: accessToken.plainTextToken })
         }
@@ -57,17 +61,25 @@ export class Session implements api.StorexHubApi_v0 {
 
     identifyApp: api.StorexHubApi_v0['identifyApp'] = async (options) => {
         const storage = await this.options.getStorage()
-        const existingApp = await storage.systemModules.apps.getApp(options.name)
-        if (!existingApp) {
+        const appInfo = await storage.systemModules.apps.getAppWithAccessKeys({ appIdentifier: options.name })
+        if (!appInfo) {
             return { status: 'invalid-access-token' }
         }
-        const valid = await this.options.accessTokenManager.validateToken({ actualHash: existingApp.accessKeyHash, providedToken: options.accessToken })
+        const { app, accessKeys } = appInfo
+
+        let valid = false
+        for (const { hash } of accessKeys) {
+            valid = await this.options.accessTokenManager.validateToken({ actualHash: hash, providedToken: options.accessToken })
+            if (valid) {
+                break
+            }
+        }
         if (!valid) {
             return { status: 'invalid-access-token' }
         }
 
-        this.identifiedApp = { identifier: options.name, id: existingApp.id }
-        this.events.emit('appIdentified', { identifier: options.name, remote: !!existingApp.isRemote })
+        this.identifiedApp = { identifier: options.name, id: app.id }
+        this.events.emit('appIdentified', { identifier: options.name, remote: !!app.isRemote })
         return { status: 'success' }
     }
 
