@@ -1,51 +1,33 @@
+import { EventEmitter } from "events";
 import pick from 'lodash/pick'
 import omit from 'lodash/omit'
 import * as api from "./public-api";
 import TypedEmitter from 'typed-emitter'
+import { AppSchema } from "@worldbrain/storex-hub-interfaces/lib/apps";
 import { AccessTokenManager } from "./access-tokens";
 import { Storage } from "./storage/types";
-import { EventEmitter } from "events";
-import { StorexHubCallbacks_v0, AllStorexHubCallbacks_v0 } from "./public-api";
-import { SingleArgumentOf, UnwrapPromise } from "./types/utils";
-import { AppSchema } from "@worldbrain/storex-hub-interfaces/lib/apps";
-import StorageManager from "@worldbrain/storex";
 import { PluginManager } from './plugins/manager';
-import { getPluginInfo } from './plugins/utils';
+import { IdentifiedApp } from './types';
+import { RemoteSessions } from "./remote-sessions";
+import { AppStorages } from "./storage/apps";
+import { AppEvents } from "./app-events";
+import { RecipeManager } from "./recipes";
 
 export interface SessionOptions {
     accessTokenManager: AccessTokenManager
     pluginManager: PluginManager
+    appStorages: AppStorages
+    remoteSessions: RemoteSessions
+    appEvents: AppEvents
+    recipes: RecipeManager
     getStorage: () => Promise<Storage>
-    getAppStorage: (identifiedApp: IdentifiedApp) => Promise<StorageManager | null>
-    updateStorage: (identifiedApp: IdentifiedApp) => Promise<void>
-
-    // executeCallback: <MethodName extends keyof StorexHubCallbacks_v0>(
-    //     (appIdentifier: string, methodName: MethodName, methodOptions: StorexHubCallbacks_v0[MethodName])
-    //         => Promise<api.ExecuteRemoteOperationResult_v0>
-    // )
-    subscribeToEvent: (options: api.SubscribeToEventOptions_v0) => Promise<api.SubscribeToEventResult_v0>
-    unsubscribeFromEvent: (options: api.UnsubscribeFromEventOptions_v0) => Promise<api.UnsubscribeFromEventResult_v0>
-    emitEvent: (options: api.EmitEventOptions_v0) => Promise<api.EmitEventResult_v0>
 
     destroySession: () => Promise<void>
-
-    executeCallback: (
-        <MethodName extends keyof AllStorexHubCallbacks_v0>
-            (appIdentifier: string, methodName: MethodName, methodOptions: SingleArgumentOf<AllStorexHubCallbacks_v0[MethodName]>)
-            => Promise<
-                { status: 'success', result: UnwrapPromise<ReturnType<AllStorexHubCallbacks_v0[MethodName]>> } |
-                { status: 'app-not-found' }
-            >
-    )
 }
 export interface SessionEvents {
     appIdentified: (event: { identifier: string, remote: boolean }) => void
 }
 
-interface IdentifiedApp {
-    id: number | string
-    identifier: string
-}
 export class Session implements api.StorexHubApi_v0 {
     events: TypedEmitter<SessionEvents> = new EventEmitter() as TypedEmitter<SessionEvents>
     identifiedApp?: IdentifiedApp
@@ -54,53 +36,65 @@ export class Session implements api.StorexHubApi_v0 {
     constructor(private options: SessionOptions) {
     }
 
-    async registerApp(options: api.RegisterAppOptions_v0): Promise<api.RegisterAppResult_v0> {
+    registerApp: api.StorexHubApi_v0['registerApp'] = async (options) => {
         const storage = await this.options.getStorage()
         const existingApp = await storage.systemModules.apps.getApp(options.name)
-        if (existingApp) {
-            return { status: 'app-already-exists' }
-        }
 
         const accessToken = await this.options.accessTokenManager.createToken()
-        await storage.systemModules.apps.createApp({
-            identifier: options.name,
-            accessKeyHash: accessToken.hashedToken,
-            isRemote: options.remote,
-        })
+        if (!existingApp) {
+            await storage.systemModules.apps.createApp({
+                identifier: options.name,
+                accessKeyHash: accessToken.hashedToken,
+                isRemote: options.remote,
+            })
+        } else {
+            await storage.systemModules.apps.addAccessKey({
+                appId: existingApp.id,
+                hash: accessToken.hashedToken,
+            })
+        }
         if (options.identify) {
             await this.identifyApp({ name: options.name, accessToken: accessToken.plainTextToken })
         }
         return { status: 'success', accessToken: accessToken.plainTextToken }
     }
 
-    async identifyApp(options: api.IdentifyAppOptions_v0): Promise<api.IdentifyAppResult_v0> {
+    identifyApp: api.StorexHubApi_v0['identifyApp'] = async (options) => {
         const storage = await this.options.getStorage()
-        const existingApp = await storage.systemModules.apps.getApp(options.name)
-        if (!existingApp) {
+        const appInfo = await storage.systemModules.apps.getAppWithAccessKeys({ appIdentifier: options.name })
+        if (!appInfo) {
             return { status: 'invalid-access-token' }
         }
-        const valid = await this.options.accessTokenManager.validateToken({ actualHash: existingApp.accessKeyHash, providedToken: options.accessToken })
+        const { app, accessKeys } = appInfo
+
+        let valid = false
+        for (const { hash } of accessKeys) {
+            valid = await this.options.accessTokenManager.validateToken({ actualHash: hash, providedToken: options.accessToken })
+            if (valid) {
+                break
+            }
+        }
         if (!valid) {
             return { status: 'invalid-access-token' }
         }
 
-        this.identifiedApp = { identifier: options.name, id: existingApp.id }
-        this.events.emit('appIdentified', { identifier: options.name, remote: !!existingApp.isRemote })
+        this.identifiedApp = { identifier: options.name, id: app.id }
+        this.events.emit('appIdentified', { identifier: options.name, remote: !!app.isRemote })
         return { status: 'success' }
     }
 
-    async getSessionInfo(): Promise<api.GetSessionInfoResult_v0> {
+    getSessionInfo: api.StorexHubApi_v0['getSessionInfo'] = async () => {
         return {
             status: 'success',
             appIdentifier: this.identifiedApp && this.identifiedApp.identifier,
         }
     }
 
-    async executeOperation(options: api.ExecuteOperationOptions_v0): Promise<api.ExecuteOperationResult_v0> {
+    executeOperation: api.StorexHubApi_v0['executeOperation'] = async (options) => {
         if (!this.identifiedApp) {
             throw new Error(`Operation executed without app identification`)
         }
-        const appStorage = await this.options.getAppStorage(this.identifiedApp)
+        const appStorage = await this.options.appStorages.getAppStorage(this.identifiedApp)
         if (!appStorage) {
             return { status: 'no-schema-found' }
         }
@@ -108,7 +102,7 @@ export class Session implements api.StorexHubApi_v0 {
         return { status: 'success', result: await appStorage.operation(options.operation[0], ...options.operation.slice(1)) }
     }
 
-    async updateSchema(options: { schema: AppSchema }): Promise<api.UpdateSchemaResult_v0> {
+    updateSchema: api.StorexHubApi_v0['updateSchema'] = async (options) => {
         if (!this.identifiedApp) {
             return {
                 success: false, errorCode: api.UpdateSchemaError_v0.NOT_ALLOWED,
@@ -124,20 +118,23 @@ export class Session implements api.StorexHubApi_v0 {
         await (await this.options.getStorage()).systemModules.apps.updateSchema(
             this.identifiedApp.id, options.schema,
         )
-        await this.options.updateStorage(this.identifiedApp)
+        await this.options.appStorages.updateStorage(this.identifiedApp)
         return { success: true }
     }
 
-    async executeRemoteOperation(options: api.ExecuteRemoteOperationOptions_v0): Promise<api.ExecuteRemoteOperationResult_v0> {
+    executeRemoteOperation: api.StorexHubApi_v0['executeRemoteOperation'] = async (options) => {
         if (!this.identifiedApp) {
             return { status: 'not-identified' }
         }
 
-        const response = await this.options.executeCallback(options.app, 'handleRemoteOperation', {
+        const response = await this.options.remoteSessions.executeCallback(options.app, 'handleRemoteOperation', {
             sourceApp: this.identifiedApp.identifier,
             operation: options.operation,
         })
         if (response.status === 'success') {
+            if (response.result.status === 'not-implemented') {
+                return { status: 'app-not-supported' }
+            }
             return {
                 status: 'success',
                 result: response.result.result
@@ -146,19 +143,45 @@ export class Session implements api.StorexHubApi_v0 {
         return response
     }
 
-    async subscribeToEvent(options: api.SubscribeToEventOptions_v0): Promise<api.SubscribeToEventResult_v0> {
-        return this.options.subscribeToEvent(options)
+    executeRemoteCall: api.StorexHubApi_v0['executeRemoteCall'] = async (options) => {
+        if (!this.identifiedApp) {
+            return { status: 'not-identified' }
+        }
+
+        const response = await this.options.remoteSessions.executeCallback(options.app, 'handleRemoteCall', {
+            call: options.call,
+            args: options.args
+        })
+        if (response.status === 'success') {
+            if (response.result.status === 'not-implemented') {
+                return { status: 'call-not-found' }
+            }
+            return response.result
+        }
+
+        return response
     }
 
-    async unsubscribeFromEvent(options: api.UnsubscribeFromEventOptions_v0): Promise<api.UnsubscribeFromEventResult_v0> {
-        return this.options.unsubscribeFromEvent(options)
+    subscribeToEvent: api.StorexHubApi_v0['subscribeToEvent'] = async (options) => {
+        if (!this.identifiedApp) {
+            return { status: 'not-identified' }
+        }
+        return this.options.appEvents.subscribeAppToEvent(this.identifiedApp, options)
     }
 
-    async emitEvent(options: api.EmitEventOptions_v0): Promise<api.EmitEventResult_v0> {
-        return this.options.emitEvent(options)
+    unsubscribeFromEvent: api.StorexHubApi_v0['unsubscribeFromEvent'] = async (options) => {
+        return this.options.appEvents.unsubscribeFromEvent(options)
     }
 
-    async destroySession() {
+    emitEvent: api.StorexHubApi_v0['emitEvent'] = async (options) => {
+        if (!this.identifiedApp) {
+            throw new Error('Cannot emit event if not identified')
+        }
+
+        return this.options.appEvents.emitEvent(this.identifiedApp, options)
+    }
+
+    destroySession: api.StorexHubApi_v0['destroySession'] = async () => {
         if (!this.destroyed) {
             await this.options.destroySession()
             this.destroyed = true
@@ -209,8 +232,11 @@ export class Session implements api.StorexHubApi_v0 {
 
         const storage = await this.options.getStorage()
         let appId = options.app
-            ? (await storage.systemModules.apps.getApp(options.app)).id
+            ? (await storage.systemModules.apps.getApp(options.app))?.id
             : this.identifiedApp.id as number
+        if (!appId) {
+            return { status: 'app-not-found' }
+        }
 
         const existingSettings = await storage.systemModules.apps.getAppSettings(appId)
         const settings = options.keys === 'all'
@@ -276,6 +302,10 @@ export class Session implements api.StorexHubApi_v0 {
 
     removePlugin: api.StorexHubApi_v0['removePlugin'] = async options => {
         throw new Error(`Not implementeed`)
+    }
+
+    createRecipe: api.StorexHubApi_v0['createRecipe'] = async options => {
+        return this.options.recipes.createRecipe(options.recipe)
     }
 }
 

@@ -2,6 +2,35 @@ import path from "path";
 import { Commands } from "./types";
 
 export const COMMANDS: Commands = {
+    "calls:execute": async (args, { client }) => {
+        const output = args.output ?? 'human'
+        console.log({
+            app: args.app,
+            call: args.call,
+            args: JSON.parse(args.args),
+        })
+        const response = await client.executeRemoteCall({
+            app: args.app,
+            call: args.call,
+            args: JSON.parse(args.args),
+        })
+        if (output === 'json') {
+            console.log(response)
+            process.exit(response.status === 'success' ? 0 : 1)
+        }
+        if (response.status === 'success') {
+            console.log('Call execute successfully! Result:')
+            console.log(response.result)
+        } else if (response.status === 'app-not-found') {
+            console.error(`App not found: ${args.app}`)
+        } else if (response.status === 'call-not-found') {
+            console.error(`No such call in app '${args.app}': ${args.call}`)
+        } else if (response.status === 'internal-error') {
+            console.error(`Internal error (${response.errorStatus}): ${response.errorText}`)
+        } else {
+            console.error(`Unknown error: ${response.status}`)
+        }
+    },
     'apps:config:set': async (args, { client }) => {
         const response = await client.setAppSettings({
             app: args.app,

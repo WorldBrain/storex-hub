@@ -23,10 +23,10 @@ export async function createHttpServer(application: Application, options: {
     app.use(bodyParser())
     app.use(session({}, app))
     if (options.frontendDir) {
-        console.log(options.frontendDir)
         app.use(serve({
             rootDir: options.frontendDir,
-            rootPath: '/management'
+            rootPath: '/management',
+            notFoundFile: 'index.html'
         }))
     }
 

@@ -5,23 +5,24 @@ import { PluginInfo } from '@worldbrain/storex-hub-interfaces/lib/plugins';
 export async function insertStorexHubFixtures(createClient: () => Promise<StorexHubApi_v0>, options: { fs: typeof fsModule }) {
     const { fs } = options
     const management = await createClient()
-    fs.mkdirSync('/plugins/org.arweave')
+    const arweavePluginIdentifier = 'org.arweave'
+    fs.mkdirSync(`/plugins/${arweavePluginIdentifier}`)
     const arweavePluginInfo: PluginInfo = {
         version: '0.0.1',
         name: 'Arweave',
-        identifier: 'org.arweave',
+        identifier: `${arweavePluginIdentifier}`,
         mainPath: 'main.js',
         entryFunction: 'main',
         siteUrl: 'https://www.arweave.org/',
         description: 'Provides permanent, censorship-resistant storage for your data',
     }
-    fs.writeFileSync('/plugins/org.arweave/manifest.json', JSON.stringify(arweavePluginInfo))
+    fs.writeFileSync(`/plugins/${arweavePluginIdentifier}/manifest.json`, JSON.stringify(arweavePluginInfo))
     await management.installPlugin({
-        identifier: 'org.arweave'
+        identifier: `${arweavePluginIdentifier}`
     })
 
     const arweave = await createClient()
-    await arweave.registerApp({ name: 'org.arweave', remote: true, identify: true })
+    await arweave.registerApp({ name: `${arweavePluginIdentifier}`, remote: true, identify: true })
     arweave.describeAppSettings({
         description: {
             layout: {
@@ -87,4 +88,28 @@ export async function insertStorexHubFixtures(createClient: () => Promise<Storex
         description: 'Share your data through IPFS and Textile',
     }
     fs.writeFileSync('/plugins/org.ipfs/manifest.json', JSON.stringify(ipfsPluginInfo))
+
+    fs.mkdirSync('/plugins/org.ipfs2')
+    const ipfs2PluginInfo: PluginInfo = {
+        version: '0.0.1',
+        name: 'IPFS34',
+        identifier: 'io.ipfs2',
+        mainPath: 'main.js',
+        entryFunction: 'main',
+        siteUrl: 'https://ipfs.io/',
+        description: 'Share your data through IPFS and Textile',
+    }
+    fs.writeFileSync('/plugins/org.ipfs2/manifest.json', JSON.stringify(ipfs2PluginInfo))
+
+    fs.mkdirSync('/plugins/org.ipfs3')
+    const ipfs3PluginInfo: PluginInfo = {
+        version: '0.0.1',
+        name: 'IPFS23',
+        identifier: 'io.ipfs3',
+        mainPath: 'main.js',
+        entryFunction: 'main',
+        siteUrl: 'https://ipfs.io/',
+        description: 'Share your data through IPFS and Textile',
+    }
+    fs.writeFileSync('/plugins/org.ipfs3/manifest.json', JSON.stringify(ipfs3PluginInfo))
 }

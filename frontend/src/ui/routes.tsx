@@ -27,7 +27,9 @@ export default class Routes extends React.Component<Props> {
           render={() => {
             return (
               <PluginSettings
-                appIdentifier="org.arweave"
+                appIdentifier={
+                  this.props.services.router.matchCurrentUrl().params.identifier
+                }
                 services={this.props.services}
               />
             );

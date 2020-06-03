@@ -3,6 +3,7 @@ import { StorexHubApi_v0 } from "../public-api"
 export type Command<Args> = (args: Args, input: { client: StorexHubApi_v0 }) => Promise<void>
 export type Commands = { [Name in keyof CommandArgs]: Command<CommandArgs[Name]> }
 export interface CommandArgs {
+    'calls:execute': { app: string, call: string, output?: 'human' | 'json', args: string },
     'plugins:list': {},
     'plugins:inspect': { path: string },
     'plugins:install': { path: string },

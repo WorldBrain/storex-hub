@@ -21,7 +21,7 @@ export default function Heading(props: {
   width?: keyof typeof HEADING_WIDTHS;
 }) {
   return (
-    <Margin vertical={3}>
+    <Margin top={5} vertical={3}>
       <StyledHeading width={props.width ?? "full"}>{props.text}</StyledHeading>
     </Margin>
   );

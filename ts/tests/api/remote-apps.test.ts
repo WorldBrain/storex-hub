@@ -8,14 +8,14 @@ import * as api from "../../public-api";
 import { ClientEvent } from '../../public-api';
 
 export default createMultiApiTestSuite('Remote apps', ({ it }) => {
-    it('should be able to proxy operations into a remote app', async ({ createSession: api }) => {
+    it('should proxy operations into a remote app', async ({ createSession: api }) => {
         const operations: any[] = []
         const { api: memex } = await api({
             type: 'websocket',
             callbacks: {
                 handleRemoteOperation: async (options) => {
                     operations.push(options)
-                    return { result: ['foo', 'bla'] }
+                    return { status: 'success', result: ['foo', 'bla'] }
                 }
             }
         })
@@ -71,10 +71,11 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
                         }
                     }
 
-                    return { subscriptionId }
+                    return { status: 'success', subscriptionId }
                 },
                 handleUnsubscription: async ({ subscriptionId }) => {
                     delete memexSubscriptions[subscriptionId]
+                    return { status: 'success' }
                 }
             }
         })
@@ -138,7 +139,7 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         return { memexStorageManager, memexSubscriptions, events, subscriptionResult, backupApp }
     }
 
-    it('should be able to let remote apps signal changes to their local storage', async ({ createSession }) => {
+    it('should let remote apps signal changes to their local storage', async ({ createSession }) => {
         const { memexStorageManager, events } = await setupChangeEventTest(createSession)
 
         await memexStorageManager.collection('tags').createObject({
@@ -165,7 +166,7 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         expect(events).toEqual(expectedEvents)
     })
 
-    it('should be able to let remote apps signal changes to their local storage and wait for all handlers to resolve', async ({ createSession }) => {
+    it('should let remote apps signal changes to their local storage and wait for all handlers to resolve', async ({ createSession }) => {
         const { memexStorageManager, events } = await setupChangeEventTest(createSession, {
             testSynchronous: true
         })
@@ -194,7 +195,7 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         expect(events).toEqual(expectedEvents)
     })
 
-    it('should be able to let remote apps signal changes to their local storage and unsubscribe from events', async ({ createSession }) => {
+    it('should let remote apps signal changes to their local storage and unsubscribe from events', async ({ createSession }) => {
         const { memexStorageManager, memexSubscriptions, events, backupApp, subscriptionResult } = await setupChangeEventTest(createSession)
 
         await memexStorageManager.collection('tags').createObject({
@@ -228,7 +229,7 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         ])
     })
 
-    it('should be able to detect when a remote app becomes available and goes down', async ({ createSession }) => {
+    it('should detect when a remote app becomes available and goes down', async ({ createSession }) => {
         const receivedEvents: ClientEvent[] = []
         const { api: backupApp } = await createSession({
             type: 'websocket',
@@ -243,7 +244,7 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
             request: { type: 'app-availability-changed' }
         })
 
-        const { api: memexApp, close: closeMemex } = await createSession({ type: 'websocket', })
+        const { api: memexApp } = await createSession({ type: 'websocket', })
         await memexApp.registerApp({ name: 'memex', identify: true, remote: true })
 
         expect(receivedEvents).toEqual([
@@ -256,5 +257,126 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         expect(receivedEvents).toEqual([
             { type: 'app-availability-changed', app: 'memex', availability: false }
         ])
+    })
+
+    it('should dispatch remote calls', async ({ createSession }) => {
+        const handledCalls: Array<any> = []
+        const { api: memex } = await createSession({
+            type: 'websocket',
+            callbacks: {
+                handleRemoteCall: async (options) => {
+                    const result = 'foo'
+                    handledCalls.push({ options, result })
+                    return { status: 'success', result }
+                }
+            }
+        })
+        await memex.registerApp({ name: 'memex', identify: true, remote: true })
+
+        const { api: pocket } = await createSession({
+            type: 'websocket',
+        })
+        await pocket.registerApp({ name: 'pocket', identify: true })
+
+        const callOptions = {
+            call: 'savePage',
+            args: {
+                url: 'https://www.test.com',
+                bookmark: true,
+            }
+        }
+        const callResult = await pocket.executeRemoteCall({
+            app: 'memex',
+            ...callOptions,
+        })
+        expect(handledCalls).toEqual([
+            { options: callOptions, result: 'foo' }
+        ])
+        expect(callResult).toEqual({
+            status: 'success',
+            result: 'foo',
+        })
+    })
+
+    it('should return remote call errors', async ({ createSession }) => {
+        const error = { status: 'internal-error' as 'internal-error', errorStatus: 'something-memex-y', errorText: 'Could not something' }
+        const { api: memex } = await createSession({
+            type: 'websocket',
+            callbacks: {
+                handleRemoteCall: async (options) => {
+                    return error
+                }
+            }
+        })
+        await memex.registerApp({ name: 'memex', identify: true, remote: true })
+
+        const { api: pocket } = await createSession({
+            type: 'websocket',
+        })
+        await pocket.registerApp({ name: 'pocket', identify: true })
+
+        const callOptions = {
+            call: 'savePage',
+            args: {
+                url: 'https://www.test.com',
+                bookmark: true,
+            }
+        }
+        const callResult = await pocket.executeRemoteCall({
+            app: 'memex',
+            ...callOptions,
+        })
+        expect(callResult).toEqual(error)
+    })
+
+    it('should return remote call errors', async ({ createSession }) => {
+        const error = { status: 'internal-error' as 'internal-error', errorStatus: 'something-memex-y', errorText: 'Could not something' }
+        const { api: memex } = await createSession({
+            type: 'websocket',
+            callbacks: {
+                handleRemoteCall: async (options) => {
+                    return error
+                }
+            }
+        })
+        await memex.registerApp({ name: 'memex', identify: true, remote: true })
+
+        const { api: pocket } = await createSession({
+            type: 'websocket',
+        })
+        await pocket.registerApp({ name: 'pocket', identify: true })
+
+        const callOptions = {
+            call: 'savePage',
+            args: {
+                url: 'https://www.test.com',
+                bookmark: true,
+            }
+        }
+        const callResult = await pocket.executeRemoteCall({
+            app: 'memex',
+            ...callOptions,
+        })
+        expect(callResult).toEqual(error)
+    })
+
+    it('should detect remote call to non-existing apps', async ({ createSession }) => {
+        const { api: pocket } = await createSession({
+            type: 'websocket',
+        })
+        await pocket.registerApp({ name: 'pocket', identify: true })
+
+        const callOptions = {
+            call: 'savePage',
+            args: {
+                url: 'https://www.test.com',
+                bookmark: true,
+            }
+        }
+        const callResult = await pocket.executeRemoteCall({
+            app: 'memex',
+            ...callOptions,
+        })
+        expect(callResult).toEqual({ status: 'app-not-found' })
     })
 })
