@@ -74,7 +74,7 @@
     "@types/supertest": "^2.0.8",
     "@types/uuid": "^3.4.7",
     "@types/yargs": "^11.0.0",
-    "@worldbrain/storex-hub-interfaces": "^0.1.4",
+    "@worldbrain/storex-hub-interfaces": "^0.1.5",
     "chai": "^4.1.2",
     "expect": "^25.3.0",
     "fake-fs": "^0.5.0",
