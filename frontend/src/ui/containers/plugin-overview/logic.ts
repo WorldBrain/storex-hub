@@ -26,32 +26,28 @@ export class PluginOverviewLogic extends StatefulUILogic<PluginOverviewState, Pl
 
     init: EventHandler<'init'> = async () => {
         await loadInitial<PluginOverviewState>(this, async () => {
-            try {
-                const client = await this.dependencies.services.storexHub.getClient()
-                const listResult = await client.listPlugins()
-                if (listResult.status !== 'success') {
-                    this.emitMutation({ loadError: { $set: listResult.status } })
-                    throw new Error(listResult.status)
-                }
-
-                const enrichedPlugins = listResult.plugins.map(plugin => {
-                    const status = listResult.state[plugin.identifier].status
-                    const installed = status === "enabled" || status === "disabled"
-                    return { ...plugin, status, installed }
-                })
-                const installedPlugins: PluginOverviewState['installedPlugins'] = enrichedPlugins.filter(plugin => {
-                    return plugin.installed
-                })
-                const availablePlugins: PluginOverviewState['installedPlugins'] = enrichedPlugins.filter(plugin => {
-                    return !plugin.installed
-                })
-                this.emitMutation({
-                    installedPlugins: { $set: installedPlugins },
-                    availablePlugins: { $set: availablePlugins }
-                })
-            } catch (e) {
-                console.error(e)
+            const client = await this.dependencies.services.storexHub.getClient()
+            const listResult = await client.listPlugins()
+            if (listResult.status !== 'success') {
+                this.emitMutation({ loadError: { $set: listResult.status } })
+                throw new Error(listResult.status)
             }
+
+            const enrichedPlugins = listResult.plugins.map(plugin => {
+                const status = listResult.state[plugin.identifier].status
+                const installed = status === "enabled" || status === "disabled"
+                return { ...plugin, status, installed }
+            })
+            const installedPlugins: PluginOverviewState['installedPlugins'] = enrichedPlugins.filter(plugin => {
+                return plugin.installed
+            })
+            const availablePlugins: PluginOverviewState['installedPlugins'] = enrichedPlugins.filter(plugin => {
+                return !plugin.installed
+            })
+            this.emitMutation({
+                installedPlugins: { $set: installedPlugins },
+                availablePlugins: { $set: availablePlugins }
+            })
         })
     }
 
