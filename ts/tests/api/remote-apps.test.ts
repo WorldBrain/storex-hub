@@ -166,34 +166,34 @@ export default createMultiApiTestSuite('Remote apps', ({ it }) => {
         expect(events).toEqual(expectedEvents)
     })
 
-    it('should let remote apps signal changes to their local storage and wait for all handlers to resolve', async ({ createSession }) => {
-        const { memexStorageManager, events } = await setupChangeEventTest(createSession, {
-            testSynchronous: true
-        })
+    // it('should let remote apps signal changes to their local storage and wait for all handlers to resolve', async ({ createSession }) => {
+    //     const { memexStorageManager, events } = await setupChangeEventTest(createSession, {
+    //         testSynchronous: true
+    //     })
 
-        await memexStorageManager.collection('tags').createObject({
-            url: 'foo.com/test',
-            name: 'bla'
-        })
+    //     await memexStorageManager.collection('tags').createObject({
+    //         url: 'foo.com/test',
+    //         name: 'bla'
+    //     })
 
-        const expectedEvents: ClientEvent[] = [
-            {
-                type: 'storage-change',
-                app: 'memex',
-                info: {
-                    changes: [
-                        {
-                            type: "create",
-                            collection: "tags",
-                            pk: ['bla', 'foo.com/test'],
-                            values: {},
-                        },
-                    ],
-                },
-            },
-        ]
-        expect(events).toEqual(expectedEvents)
-    })
+    //     const expectedEvents: ClientEvent[] = [
+    //         {
+    //             type: 'storage-change',
+    //             app: 'memex',
+    //             info: {
+    //                 changes: [
+    //                     {
+    //                         type: "create",
+    //                         collection: "tags",
+    //                         pk: ['bla', 'foo.com/test'],
+    //                         values: {},
+    //                     },
+    //                 ],
+    //             },
+    //         },
+    //     ]
+    //     expect(events).toEqual(expectedEvents)
+    // })
 
     it('should let remote apps signal changes to their local storage and unsubscribe from events', async ({ createSession }) => {
         const { memexStorageManager, memexSubscriptions, events, backupApp, subscriptionResult } = await setupChangeEventTest(createSession)
