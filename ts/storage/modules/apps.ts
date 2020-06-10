@@ -134,10 +134,11 @@ export class AppStorage extends StorageModule {
     }
 
     async createApp(app: { identifier: string, accessKeyHash: string, isRemote?: boolean }) {
-        await this.operation('createApp', app)
+        const { object } = await this.operation('createApp', app)
+        return { id: object.id }
     }
 
-    async getApp(identifier: string) {
+    async getApp(identifier: string): Promise<{ id: number | string, accessKeyHash: string }> {
         return this.operation('findAppByIdentifier', { identifier })
     }
 
@@ -190,12 +191,12 @@ export class AppStorage extends StorageModule {
         return { schema: JSON.parse(schemaObject.schema, jsonReviver) }
     }
 
-    async getAppSettingsDescription(appId: number) {
+    async getAppSettingsDescription(appId: number | string) {
         const object = await this.operation('findSettingsDescription', { appId })
         return object ? object.description : null
     }
 
-    async setAppSettingsDescription(appId: number, description: SettingsDescription) {
+    async setAppSettingsDescription(appId: number | string, description: SettingsDescription) {
         const object = await this.operation('findSettingsDescription', { appId })
         if (object) {
             await this.operation('updateSettingsDescription', { appId, description })
@@ -204,12 +205,12 @@ export class AppStorage extends StorageModule {
         }
     }
 
-    async getAppSettings(appId: number) {
+    async getAppSettings(appId: number | string) {
         const object = await this.operation('findSettings', { appId })
         return object ? object.settings : null
     }
 
-    async setAppSettings(appId: number, settings: { [key: string]: AppSettingValue }) {
+    async setAppSettings(appId: number | string, settings: { [key: string]: AppSettingValue }) {
         const object = await this.operation('findSettings', { appId })
         if (object) {
             await this.operation('updateSettings', { appId, settings })

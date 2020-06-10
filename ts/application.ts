@@ -1,3 +1,4 @@
+import uuid from 'uuid/v4'
 import * as fs from 'fs'
 import TypedEmitter from 'typed-emitter'
 import { StorageBackend } from "@worldbrain/storex";
@@ -32,6 +33,8 @@ export class Application {
     remoteSessions: RemoteSessions
     appEvents: AppEvents
     recipes: RecipeManager
+    systemAppId!: number | string
+    instanceId!: string
 
     constructor(private options: ApplicationOptions) {
         this.storage = createStorage({
@@ -68,11 +71,29 @@ export class Application {
     }
 
     async setup() {
+        const storage = await this.storage
+
+        let firstStartup = false
+        let app = await storage.systemModules.apps.getApp('_system') as { id: number | string }
+        if (!app) {
+            firstStartup = true
+            app = await storage.systemModules.apps.createApp({ identifier: '_system', accessKeyHash: '' })
+        }
+        this.systemAppId = app.id
+
+        if (firstStartup) {
+            const instanceId = this.instanceId = uuid();
+            await storage.systemModules.apps.setAppSettings(this.systemAppId, { instanceId })
+        } else {
+            this.instanceId = (await storage.systemModules.apps.getAppSettings(this.systemAppId)).instanceId
+        }
+
         await this.pluginManager.setup((await this.storage).systemModules.plugins)
     }
 
     async api(options?: ApplicationApiOptions): Promise<StorexHubApi_v0> {
         const session = new Session({
+            instanceId: this.instanceId,
             accessTokenManager: this.options.accessTokenManager,
             pluginManager: this.pluginManager,
             appStorages: this.appStorages,

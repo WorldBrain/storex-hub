@@ -14,6 +14,7 @@ import { AppEvents } from "./app-events";
 import { RecipeManager } from "./recipes";
 
 export interface SessionOptions {
+    instanceId: string
     accessTokenManager: AccessTokenManager
     pluginManager: PluginManager
     appStorages: AppStorages
@@ -86,6 +87,7 @@ export class Session implements api.StorexHubApi_v0 {
     getSessionInfo: api.StorexHubApi_v0['getSessionInfo'] = async () => {
         return {
             status: 'success',
+            instanceId: this.options.instanceId,
             appIdentifier: this.identifiedApp && this.identifiedApp.identifier,
         }
     }

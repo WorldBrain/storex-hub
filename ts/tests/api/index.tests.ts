@@ -91,7 +91,9 @@ export async function createTestApplication(options?: { storageBackend: TestAppl
         applicationDependencies.pluginsDir = '/plugins'
     }
 
-    return { application: new Application(applicationDependencies), cleanup, fs: applicationDependencies.fsModule }
+    const application = new Application(applicationDependencies)
+    await application.setup()
+    return { application: application, cleanup, fs: applicationDependencies.fsModule }
 }
 
 export async function withTestApplication(body: (appliication: Application) => Promise<void>, options?: { storageBackend: TestApplicationStorageBackend }) {

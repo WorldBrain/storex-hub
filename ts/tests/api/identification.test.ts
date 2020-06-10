@@ -4,11 +4,13 @@ import * as apiTypes from '../../public-api';
 
 const IDENTIFIED_SESSION_INFO: apiTypes.GetSessionInfoResult_v0 = {
     status: 'success',
+    instanceId: expect.any(String) as unknown as string,
     appIdentifier: 'contacts'
 }
 
 const ANONYMOUS_SESSION_INFO: apiTypes.GetSessionInfoResult_v0 = {
     status: 'success',
+    instanceId: expect.any(String) as unknown as string,
 }
 
 export default createApiTestSuite('Application registration and identification', ({ it }) => {
