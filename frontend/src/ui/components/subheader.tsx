@@ -8,6 +8,7 @@ const StyledSubheader = styled.div`
   padding-left: ${leftPageMargin};
   display: flex;
   align-items: center;
+  margin-top: 80px;
 `;
 
 export default function Subheader(props: { children: React.ReactNode }) {

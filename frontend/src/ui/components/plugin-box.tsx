@@ -133,7 +133,6 @@ export default function PluginBox(props: PluginBoxProps) {
 
   return (
     <StyledPluginBox>
-      <PluginLogo></PluginLogo>
       <PluginBody>
         {status === "available" ? (
           <PluginTitle>{plugin.name}</PluginTitle>
