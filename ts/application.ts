@@ -89,6 +89,7 @@ export class Application {
         }
 
         await this.pluginManager.setup((await this.storage).systemModules.plugins)
+        await this.recipes.setup()
     }
 
     async api(options?: ApplicationApiOptions): Promise<StorexHubApi_v0> {

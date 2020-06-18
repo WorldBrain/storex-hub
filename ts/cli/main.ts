@@ -150,6 +150,7 @@ export function parseArgs(args: string[]): { appArgs: AppArgs, commandArgs: (Com
     for (const [commandName, commandInfo] of Object.entries(COMMAND_INFO)) {
         parser = parser.command({
             command: commandInfo.command,
+            describe: commandInfo.describe,
             builder: subparser => {
                 for (const [optionName, optionDescription] of Object.entries(commandInfo.options ?? [])) {
                     subparser = subparser.option(optionName, optionDescription)

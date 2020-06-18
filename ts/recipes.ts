@@ -16,6 +16,19 @@ export class RecipeManager {
 
     }
 
+    async setup() {
+        const recipeStorage = await this.options.getRecipeStorage()
+        const recipes = await recipeStorage.getAllRecipes()
+        for (const recipe of recipes) {
+            try {
+                await this.setupRecipe(recipe)
+            } catch (e) {
+                console.error('Error during recipe setup:')
+                console.error(e)
+            }
+        }
+    }
+
     async createRecipe(recipe: RecipeDefinition): Promise<CreateRecipeResult_v0> {
         const recipeStorage = await this.options.getRecipeStorage()
         await recipeStorage.createRecipe(recipe)
