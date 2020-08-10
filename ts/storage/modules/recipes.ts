@@ -38,6 +38,7 @@ export class RecipeStorage extends StorageModule {
     }
 
     async getAllRecipes(): Promise<RecipeDefinition[]> {
-        return this.operation('getAllRecipes', {})
+        const recipeObjects: Array<{ content: RecipeDefinition }> = await this.operation('getAllRecipes', {});
+        return recipeObjects.map(recipeObject => recipeObject.content)
     }
 }

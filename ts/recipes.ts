@@ -39,18 +39,32 @@ export class RecipeManager {
     async setupRecipe(recipe: RecipeDefinition) {
         const { select } = recipe
         if (select.remote) {
-            this.options.appEvents.subscribeToEvent({
+            const subscribe = () => this.options.appEvents.subscribeToEvent({
                 request: {
                     type: 'storage-change',
                     app: select.app,
                     collections: [select.collection],
                 }
             }, async (options) => {
+                console.log('got storage change', options.event)
                 const { event } = options
                 if (event.type !== 'storage-change') {
                     return
                 }
                 this._processStorageChange(recipe, event.info)
+            })
+
+            subscribe()
+            this.options.appEvents.subscribeToEvent({ request: { type: 'app-availability-changed' } }, async ({ event }) => {
+                if (event.type !== 'app-availability-changed') {
+                    return
+                }
+                if (event.app !== select.app) {
+                    return
+                }
+                if (event.availability) {
+                    subscribe()
+                }
             })
         } else {
             throw new Error(`Non-remote selects in recipes are not supported yet.`)
@@ -61,7 +75,19 @@ export class RecipeManager {
         const { select } = recipe
         for (const change of info.changes) {
             if (change.type === 'create') {
-                if (!matchObject({ object: change.values, filter: recipe.select.where }).matches) {
+                const matchTarget = { ...change.values }
+                if (select.pk) {
+                    if (typeof select.pk !== 'string') {
+                        for (const [index, name] of select.pk.entries()) {
+                            matchTarget[name] = change.pk[index]
+                        }
+                    } else {
+                        matchTarget[select.pk] = change.pk
+                    }
+                }
+
+                const { matches } = matchObject({ object: matchTarget, filter: recipe.select.where });
+                if (!matches) {
                     continue
                 }
 
