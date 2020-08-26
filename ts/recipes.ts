@@ -46,7 +46,6 @@ export class RecipeManager {
                     collections: [select.collection],
                 }
             }, async (options) => {
-                console.log('got storage change', options.event)
                 const { event } = options
                 if (event.type !== 'storage-change') {
                     return
@@ -112,6 +111,7 @@ export class RecipeManager {
             if ('call' in action) {
                 const args = { ...action }
                 delete args.app
+                console.log('Recipe executing remote call:', args)
                 await this.options.remoteSessions.executeCallback(action.app, 'handleRemoteCall', args)
             } else if ('operation' in action) {
                 if (!action.remote) {
@@ -121,15 +121,15 @@ export class RecipeManager {
                     throw new Error(`Unsupported operation found in recipe: ${action.operation}`)
                 }
 
-                const result = await this.options.remoteSessions.executeCallback(action.app, 'handleRemoteOperation', {
+                let result = await this.options.remoteSessions.executeCallback(action.app, 'handleRemoteOperation', {
                     operation: [action.operation, action.collection, action.where],
                     sourceApp: '',
                 })
-                if (result.status !== 'success') {
+                if (('status' in result) && result.status !== 'success') {
                     throw new Error(`Error status received while trying to execute remote operation: ${result.status}`)
                 }
                 const callbackResult = result.result
-                if (callbackResult.status !== 'success') {
+                if (('status' in callbackResult) && callbackResult.status !== 'success') {
                     throw new Error(`Error status received while trying to execute remote operation: ${callbackResult.status}`)
                 }
                 if (action.placeholder) {
