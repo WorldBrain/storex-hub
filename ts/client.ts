@@ -22,7 +22,7 @@ export async function createStorexHubClient(request: StorexHubClientRequester, o
 }
 
 export async function createStorexHubSocketClient(socket: SocketIOClient.Socket, options?: { callbacks?: Partial<StorexHubCallbacks_v0> }) {
-    const waitForConnection = new Promise((resolve, reject) => {
+    const waitForConnection = new Promise<void>((resolve, reject) => {
         socket.once('connect', () => {
             resolve()
         })
