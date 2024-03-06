@@ -1,6 +1,6 @@
 {
   "name": "@worldbrain/storex-hub",
-  "version": "0.4.6",
+  "version": "0.4.8",
   "description": "A single data store for your local Storex apps",
   "main": "lib/main.js",
   "scripts": {
@@ -27,7 +27,7 @@
     "@worldbrain/storex": "^0.4.1",
     "@worldbrain/storex-backend-dexie": "^0.3.1",
     "@worldbrain/storex-backend-typeorm": "^0.2.1",
-    "@worldbrain/storex-hub-interfaces": "^0.1.5",
+    "@worldbrain/storex-hub-interfaces": "^0.1.6",
     "@worldbrain/storex-middleware-change-watcher": "^0.1.1",
     "@worldbrain/storex-pattern-modules": "^0.4.0",
     "auto-launch": "^5.0.5",
