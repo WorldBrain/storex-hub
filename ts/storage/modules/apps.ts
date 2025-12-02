@@ -1,9 +1,12 @@
-import { StorageModule, StorageModuleConfig } from '@worldbrain/storex-pattern-modules'
-import { AppSchema } from '@worldbrain/storex-hub-interfaces/lib/apps';
-import { AppSettingValue } from '@worldbrain/storex-hub-interfaces/lib/api/server';
-import STORAGE_VERSIONS from '../versions';
-import { extendedJSONReviver } from '../../utils/json';
-import { SettingsDescription } from '@worldbrain/storex-hub-interfaces/lib/settings';
+import {
+    StorageModule,
+    StorageModuleConfig,
+} from '@worldbrain/storex-pattern-modules'
+import { AppSchema } from '@worldbrain/storex-hub-interfaces/ts/apps'
+import { AppSettingValue } from '@worldbrain/storex-hub-interfaces/ts/api/server'
+import STORAGE_VERSIONS from '../versions'
+import { extendedJSONReviver } from '../../utils/json'
+import { SettingsDescription } from '@worldbrain/storex-hub-interfaces/ts/settings'
 
 export class AppStorage extends StorageModule {
     getConfig(): StorageModuleConfig {
@@ -14,55 +17,47 @@ export class AppStorage extends StorageModule {
                     fields: {
                         identifier: { type: 'string' },
                         accessKeyHash: { type: 'string' },
-                        isRemote: { type: 'boolean', optional: true }
-                    }
+                        isRemote: { type: 'boolean', optional: true },
+                    },
                 },
                 appAccessKey: {
                     version: STORAGE_VERSIONS[2],
                     fields: {
                         hash: { type: 'string' },
                     },
-                    relationships: [
-                        { childOf: 'app' }
-                    ]
+                    relationships: [{ childOf: 'app' }],
                 },
                 appSchema: {
                     version: STORAGE_VERSIONS[0],
                     fields: {
                         schema: { type: 'string' },
                     },
-                    relationships: [
-                        { singleChildOf: 'app' }
-                    ]
+                    relationships: [{ singleChildOf: 'app' }],
                 },
                 appSettingsDescription: {
                     version: STORAGE_VERSIONS[1],
                     fields: {
                         description: { type: 'json' },
                     },
-                    relationships: [
-                        { childOf: 'app' }
-                    ],
+                    relationships: [{ childOf: 'app' }],
                 },
                 appSettingsObject: {
                     version: STORAGE_VERSIONS[1],
                     fields: {
                         settings: { type: 'json' },
                     },
-                    relationships: [
-                        { childOf: 'app' }
-                    ],
-                }
+                    relationships: [{ childOf: 'app' }],
+                },
             },
             operations: {
                 createApp: {
                     operation: 'createObject',
-                    collection: 'app'
+                    collection: 'app',
                 },
                 findAppByIdentifier: {
                     operation: 'findObject',
                     collection: 'app',
-                    args: { identifier: '$identifier:string' }
+                    args: { identifier: '$identifier:string' },
                 },
                 createAccessKey: {
                     operation: 'createObject',
@@ -71,29 +66,26 @@ export class AppStorage extends StorageModule {
                 findAccessKeyByIdentifier: {
                     operation: 'findObjects',
                     collection: 'appAccessKey',
-                    args: { app: '$appId:pk' }
+                    args: { app: '$appId:pk' },
                 },
                 createSchema: {
                     operation: 'createObject',
-                    collection: 'appSchema'
+                    collection: 'appSchema',
                 },
                 updateSchema: {
                     operation: 'updateObject',
                     collection: 'appSchema',
-                    args: [
-                        { app: '$app:pk' },
-                        { schema: '$schema:string' }
-                    ]
+                    args: [{ app: '$app:pk' }, { schema: '$schema:string' }],
                 },
                 getSchema: {
                     operation: 'findObject',
                     collection: 'appSchema',
-                    args: { app: '$app:pk' }
+                    args: { app: '$app:pk' },
                 },
                 getAllSchemas: {
                     operation: 'findObjects',
                     collection: 'appSchema',
-                    args: {}
+                    args: {},
                 },
                 createSettingsDescription: {
                     operation: 'createObject',
@@ -109,7 +101,7 @@ export class AppStorage extends StorageModule {
                     collection: 'appSettingsDescription',
                     args: [
                         { app: '$appId:pk' },
-                        { description: '$description:json' }
+                        { description: '$description:json' },
                     ],
                 },
                 createSettings: {
@@ -126,38 +118,48 @@ export class AppStorage extends StorageModule {
                     collection: 'appSettingsObject',
                     args: [
                         { app: '$appId:pk' },
-                        { settings: '$settings:json' }
+                        { settings: '$settings:json' },
                     ],
-                }
-            }
+                },
+            },
         }
     }
 
-    async createApp(app: { identifier: string, accessKeyHash: string, isRemote?: boolean }) {
+    async createApp(app: {
+        identifier: string
+        accessKeyHash: string
+        isRemote?: boolean
+    }) {
         const { object } = await this.operation('createApp', app)
         return { id: object.id }
     }
 
-    async getApp(identifier: string): Promise<{ id: number | string, accessKeyHash: string }> {
+    async getApp(
+        identifier: string,
+    ): Promise<{ id: number | string; accessKeyHash: string }> {
         return this.operation('findAppByIdentifier', { identifier })
     }
 
-    async addAccessKey(params: { appId: string | number, hash: string }) {
-        await this.operation('createAccessKey', { app: params.appId, hash: params.hash })
+    async addAccessKey(params: { appId: string | number; hash: string }) {
+        await this.operation('createAccessKey', {
+            app: params.appId,
+            hash: params.hash,
+        })
     }
 
-    async getAppWithAccessKeys(params: { appIdentifier: string }): Promise<{ app: any, accessKeys: Array<{ hash: string }> } | null> {
+    async getAppWithAccessKeys(params: {
+        appIdentifier: string
+    }): Promise<{ app: any; accessKeys: Array<{ hash: string }> } | null> {
         const app = await this.getApp(params.appIdentifier)
         if (!app) {
             return null
         }
-        const keys = await this.operation('findAccessKeyByIdentifier', { appId: app.id })
+        const keys = await this.operation('findAccessKeyByIdentifier', {
+            appId: app.id,
+        })
         return {
             app,
-            accessKeys: [
-                { hash: app.accessKeyHash },
-                ...keys
-            ]
+            accessKeys: [{ hash: app.accessKeyHash }, ...keys],
         }
     }
 
@@ -165,25 +167,31 @@ export class AppStorage extends StorageModule {
         const existingSchema = await this.operation('getSchema', { app: appId })
         const serialized = JSON.stringify(schema, null, 4)
         if (existingSchema) {
-            await this.operation('updateSchema', { app: appId, schema: serialized })
+            await this.operation('updateSchema', {
+                app: appId,
+                schema: serialized,
+            })
         } else {
-            await this.operation('createSchema', { app: appId, schema: serialized })
+            await this.operation('createSchema', {
+                app: appId,
+                schema: serialized,
+            })
         }
     }
 
     async getAppSchemas(): Promise<Array<{ schema: AppSchema }>> {
         const jsonReviver = extendedJSONReviver({ withDates: true })
 
-        const schemaObjects = await this.operation('getAllSchemas', {});
+        const schemaObjects = await this.operation('getAllSchemas', {})
         return schemaObjects.map((schemaObject: { schema: string }) => ({
-            schema: JSON.parse(schemaObject.schema, jsonReviver)
+            schema: JSON.parse(schemaObject.schema, jsonReviver),
         }))
     }
 
     async getAppSchema(appId: number): Promise<{ schema: AppSchema } | null> {
         const jsonReviver = extendedJSONReviver({ withDates: true })
 
-        const schemaObject = await this.operation('getSchema', { app: appId });
+        const schemaObject = await this.operation('getSchema', { app: appId })
         if (!schemaObject?.schema) {
             return null
         }
@@ -192,16 +200,29 @@ export class AppStorage extends StorageModule {
     }
 
     async getAppSettingsDescription(appId: number | string) {
-        const object = await this.operation('findSettingsDescription', { appId })
+        const object = await this.operation('findSettingsDescription', {
+            appId,
+        })
         return object ? object.description : null
     }
 
-    async setAppSettingsDescription(appId: number | string, description: SettingsDescription) {
-        const object = await this.operation('findSettingsDescription', { appId })
+    async setAppSettingsDescription(
+        appId: number | string,
+        description: SettingsDescription,
+    ) {
+        const object = await this.operation('findSettingsDescription', {
+            appId,
+        })
         if (object) {
-            await this.operation('updateSettingsDescription', { appId, description })
+            await this.operation('updateSettingsDescription', {
+                appId,
+                description,
+            })
         } else {
-            await this.operation('createSettingsDescription', { app: appId, description })
+            await this.operation('createSettingsDescription', {
+                app: appId,
+                description,
+            })
         }
     }
 
@@ -210,7 +231,10 @@ export class AppStorage extends StorageModule {
         return object ? object.settings : null
     }
 
-    async setAppSettings(appId: number | string, settings: { [key: string]: AppSettingValue }) {
+    async setAppSettings(
+        appId: number | string,
+        settings: { [key: string]: AppSettingValue },
+    ) {
         const object = await this.operation('findSettings', { appId })
         if (object) {
             await this.operation('updateSettings', { appId, settings })

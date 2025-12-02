@@ -1,7 +1,10 @@
-import { StorageModule, StorageModuleConfig } from '@worldbrain/storex-pattern-modules'
-import STORAGE_VERSIONS from '../versions';
-import { extendedJSONReviver } from '../../utils/json';
-import { RecipeDefinition } from '@worldbrain/storex-hub-interfaces/lib/recipes';
+import {
+    StorageModule,
+    StorageModuleConfig,
+} from '@worldbrain/storex-pattern-modules'
+import STORAGE_VERSIONS from '../versions'
+import { extendedJSONReviver } from '../../utils/json'
+import { RecipeDefinition } from '@worldbrain/storex-hub-interfaces/ts/recipes'
 
 export class RecipeStorage extends StorageModule {
     getConfig(): StorageModuleConfig {
@@ -11,25 +14,25 @@ export class RecipeStorage extends StorageModule {
                     version: STORAGE_VERSIONS[2],
                     fields: {
                         content: { type: 'json' },
-                    }
-                }
+                    },
+                },
             },
             operations: {
                 createRecipe: {
                     operation: 'createObject',
-                    collection: 'integrationRecipe'
+                    collection: 'integrationRecipe',
                 },
                 getAllRecipes: {
                     operation: 'findObjects',
                     collection: 'integrationRecipe',
-                    args: {}
+                    args: {},
                 },
                 deleteRecipeById: {
                     operation: 'deleteObjects',
                     collection: 'integrationRecipe',
-                    args: { id: '$id:pk' }
-                }
-            }
+                    args: { id: '$id:pk' },
+                },
+            },
         }
     }
 
@@ -38,7 +41,8 @@ export class RecipeStorage extends StorageModule {
     }
 
     async getAllRecipes(): Promise<RecipeDefinition[]> {
-        const recipeObjects: Array<{ content: RecipeDefinition }> = await this.operation('getAllRecipes', {});
-        return recipeObjects.map(recipeObject => recipeObject.content)
+        const recipeObjects: Array<{ content: RecipeDefinition }> =
+            await this.operation('getAllRecipes', {})
+        return recipeObjects.map((recipeObject) => recipeObject.content)
     }
 }

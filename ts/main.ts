@@ -1,14 +1,14 @@
-import * as fs from 'fs';
+import * as fs from 'fs'
 import * as path from 'path'
 import cryptoRandomString from 'crypto-random-string'
-import { StorageBackend } from "@worldbrain/storex";
+import { StorageBackend } from '@worldbrain/storex'
 import { DexieStorageBackend } from '@worldbrain/storex-backend-dexie'
-import inMemory from '@worldbrain/storex-backend-dexie/lib/in-memory'
-import { TypeORMStorageBackend } from "@worldbrain/storex-backend-typeorm";
+import inMemory from '@worldbrain/storex-backend-dexie/ts/in-memory'
+import { TypeORMStorageBackend } from '@worldbrain/storex-backend-typeorm'
 
-import { Application, ApplicationOptions } from "./application";
-import { BcryptAccessTokenManager } from "./access-tokens";
-import { createHttpServer } from "./server";
+import { Application, ApplicationOptions } from './application'
+import { BcryptAccessTokenManager } from './access-tokens'
+import { createHttpServer } from './server'
 
 export interface RuntimeConfig {
     dbPath?: string
@@ -19,7 +19,7 @@ export interface RuntimeConfig {
 let storageBackendsCreated = 0
 
 export async function main(options?: {
-    runtimeConfig?: RuntimeConfig,
+    runtimeConfig?: RuntimeConfig
     frontendDir?: string
     withoutServer?: boolean
 }) {
@@ -38,7 +38,7 @@ export async function main(options?: {
 export function getRuntimeConfig(): RuntimeConfig {
     return {
         dbPath: process.env.DB_PATH,
-        pluginsDir: process.env.PLUGINS_DIR
+        pluginsDir: process.env.PLUGINS_DIR,
     }
 }
 
@@ -47,13 +47,16 @@ export async function setupApplication(runtimeConfig?: RuntimeConfig) {
         pluginsDir: runtimeConfig?.pluginsDir,
         ...getApplicationDependencies({
             dbFilePath: runtimeConfig?.dbPath,
-        })
+        }),
     })
     await application.setup()
     return application
 }
 
-export async function startServer(application: Application, options: { frontendDir?: string }) {
+export async function startServer(
+    application: Application,
+    options: { frontendDir?: string },
+) {
     const server = await createHttpServer(application, {
         secretKey: 'very secret key',
         ...options,
@@ -62,7 +65,9 @@ export async function startServer(application: Application, options: { frontendD
     const port = getPortNumber()
     await server.start({ port })
     console.log(`Server started at http://localhost:${port}`)
-    console.log(`You can find the management UI at http://localhost:${port}/management/`)
+    console.log(
+        `You can find the management UI at http://localhost:${port}/management/`,
+    )
     return server
 }
 
@@ -71,7 +76,9 @@ export function getPortNumber(): number {
     if (fromEnv) {
         const port = parseInt(fromEnv)
         if (!port) {
-            console.error(`Invalid STOREX_HUB_PORT environment variable: ${fromEnv}`)
+            console.error(
+                `Invalid STOREX_HUB_PORT environment variable: ${fromEnv}`,
+            )
             process.exit(1)
         }
         return port
@@ -99,22 +106,29 @@ function getDBFilePath(configured: string, appIdentifier: string) {
 export function getApplicationDependencies(options: { dbFilePath?: string }) {
     let applicationDependencies: ApplicationOptions
     const accessTokenManager = new BcryptAccessTokenManager({
-        tokenGenerator: async () => cryptoRandomString({ length: 24, type: 'base64' })
+        tokenGenerator: async () =>
+            cryptoRandomString({ length: 24, type: 'base64' }),
     })
 
     if (options.dbFilePath) {
         applicationDependencies = {
             accessTokenManager,
-            createStorageBackend: ({ appIdentifier }) => new TypeORMStorageBackend({
-                connectionOptions: {
-                    type: 'sqlite',
-                    database: getDBFilePath(options.dbFilePath!, appIdentifier),
-                    name: `connection-main-${++storageBackendsCreated}`,
-                } as any,
-            }),
+            createStorageBackend: ({ appIdentifier }) =>
+                new TypeORMStorageBackend({
+                    connectionOptions: {
+                        type: 'sqlite',
+                        database: getDBFilePath(
+                            options.dbFilePath!,
+                            appIdentifier,
+                        ),
+                        name: `connection-main-${++storageBackendsCreated}`,
+                    } as any,
+                }),
             closeStorageBackend: async (storageBackend: StorageBackend) => {
-                await (storageBackend as TypeORMStorageBackend).connection?.close?.()
-            }
+                await (
+                    storageBackend as TypeORMStorageBackend
+                ).connection?.close?.()
+            },
         }
     } else {
         try {
@@ -124,7 +138,9 @@ export function getApplicationDependencies(options: { dbFilePath?: string }) {
             // ...but we don't care if it fails
         }
 
-        const idbImplementations: { [appIdentifier: string]: ReturnType<typeof inMemory> } = {}
+        const idbImplementations: {
+            [appIdentifier: string]: ReturnType<typeof inMemory>
+        } = {}
         applicationDependencies = {
             accessTokenManager,
             createStorageBackend: (backupOptions) => {
@@ -132,7 +148,9 @@ export function getApplicationDependencies(options: { dbFilePath?: string }) {
                     idbImplementations[backupOptions.appIdentifier] = inMemory()
                 }
                 return new DexieStorageBackend({
-                    dbName: backupOptions.appIdentifier, idbImplementation: idbImplementations[backupOptions.appIdentifier]
+                    dbName: backupOptions.appIdentifier,
+                    idbImplementation:
+                        idbImplementations[backupOptions.appIdentifier],
                 })
             },
             closeStorageBackend: async (storageBackend: StorageBackend) => {
@@ -150,4 +168,3 @@ if (require.main === module) {
 
 // curl -c cookies.txt -b cookies.txt 'http://localhost:3000/app/register' -H 'content-type: application/json' -d '{"name": "test", "identify": true}' ; echo
 // curl -b cookies.txt 'http://localhost:3000/remote/operation' -H 'content-type: application/json' -d '{"app": "memex", "operation": ["findObjects", "tags", {}]}' ; echo
-

@@ -1,9 +1,14 @@
 import * as path from 'path'
 import * as fs from 'fs'
-import { InspectPluginError_v0 } from '@worldbrain/storex-hub-interfaces/lib/api'
-import { PluginInfo } from '@worldbrain/storex-hub-interfaces/lib/plugins'
+import { InspectPluginError_v0 } from '@worldbrain/storex-hub-interfaces/ts/api'
+import { PluginInfo } from '@worldbrain/storex-hub-interfaces/ts/plugins'
 
-export async function getPluginInfo(location: string, fsModule?: Pick<typeof fs, 'existsSync' | 'readFileSync'>): Promise<InspectPluginError_v0 | { status: 'success', pluginInfo: PluginInfo }> {
+export async function getPluginInfo(
+    location: string,
+    fsModule?: Pick<typeof fs, 'existsSync' | 'readFileSync'>,
+): Promise<
+    InspectPluginError_v0 | { status: 'success'; pluginInfo: PluginInfo }
+> {
     fsModule = fsModule ?? fs
 
     const manifestPath = path.join(location, 'manifest.json')

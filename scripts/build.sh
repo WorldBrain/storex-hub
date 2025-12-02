@@ -47,7 +47,7 @@ for target in $targets; do
             --target_arch='x64' \
             --target=${node_version:1} > /dev/null
 
-        sqlite_module_count=`ls -1 node_modules/sqlite3/lib/binding/node-*-$platform-x64/ | wc -l`
+        sqlite_module_count=`ls -1 node_modules/sqlite3/ts/binding/node-*-$platform-x64/ | wc -l`
         if [ "$sqlite_module_count" -eq 0 ]; then
             echo "Could not build the SQLite module for platform '$platform'" >&2
             exit 1
@@ -57,7 +57,7 @@ for target in $targets; do
             exit 1
         fi
 
-        cp node_modules/sqlite3/lib/binding/node-*-$platform-x64/node_sqlite3.node $output_dir
+        cp node_modules/sqlite3/ts/binding/node-*-$platform-x64/node_sqlite3.node $output_dir
     fi
 
     rm -rf $output_dir/frontend 2> /dev/null

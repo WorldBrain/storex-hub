@@ -1,8 +1,11 @@
 import * as path from 'path'
-import { StorageModule, StorageModuleConfig } from "@worldbrain/storex-pattern-modules";
-import STORAGE_VERSIONS from "../../storage/versions";
-import { PluginInfo } from '@worldbrain/storex-hub-interfaces/lib/plugins';
-import { InstalledPluginMetadata } from '../types';
+import {
+    StorageModule,
+    StorageModuleConfig,
+} from '@worldbrain/storex-pattern-modules'
+import STORAGE_VERSIONS from '../../storage/versions'
+import { PluginInfo } from '@worldbrain/storex-hub-interfaces/ts/plugins'
+import { InstalledPluginMetadata } from '../types'
 
 export class PluginManagementStorage extends StorageModule {
     getConfig = (): StorageModuleConfig => ({
@@ -14,8 +17,8 @@ export class PluginManagementStorage extends StorageModule {
                     addedWhen: { type: 'timestamp' },
                     enabled: { type: 'boolean' },
                     path: { type: 'string' },
-                    info: { type: 'json' }
-                }
+                    info: { type: 'json' },
+                },
             },
         },
         operations: {
@@ -36,9 +39,9 @@ export class PluginManagementStorage extends StorageModule {
             findPluginByIdentifier: {
                 operation: 'findObject',
                 collection: 'pluginMetadata',
-                args: { identifier: '$identifier' }
-            }
-        }
+                args: { identifier: '$identifier' },
+            },
+        },
     })
 
     async addPlugin(info: PluginInfo, extraInfo: { path: string }) {
@@ -47,24 +50,27 @@ export class PluginManagementStorage extends StorageModule {
             identifier: info.identifier,
             path: extraInfo.path,
             addedWhen: this._getNow(),
-            enabled: true
+            enabled: true,
         })
     }
 
     async getPluginInfoByIdentifier(identifier: string) {
-        return ((await this.operation('findPluginByIdentifier', { identifier })) || null)?.info
+        return (
+            (await this.operation('findPluginByIdentifier', { identifier })) ||
+            null
+        )?.info
     }
 
     async getAllPluginMetadata(): Promise<InstalledPluginMetadata[]> {
-        const records: any[] = (await this.operation('getAllPlugins', {}))
+        const records: any[] = await this.operation('getAllPlugins', {})
         return records
     }
 
     async getInfoForEnabledPlugins(): Promise<PluginInfo[]> {
-        const records: any[] = (await this.operation('getEnabledPlugins', {}))
-        return records.map(record => ({
+        const records: any[] = await this.operation('getEnabledPlugins', {})
+        return records.map((record) => ({
             ...record.info,
-            mainPath: path.join(record.path, record.info.mainPath)
+            mainPath: path.join(record.path, record.info.mainPath),
         }))
     }
 

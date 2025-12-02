@@ -1,5 +1,8 @@
-import { PluginEntryFunction, PluginInterface } from "@worldbrain/storex-hub-interfaces/lib/plugins";
-import { CollectionDefinitionMap } from "@worldbrain/storex";
+import {
+    PluginEntryFunction,
+    PluginInterface,
+} from '@worldbrain/storex-hub-interfaces/ts/plugins'
+import { CollectionDefinitionMap } from '@worldbrain/storex'
 
 export interface SelfTestPlugin extends PluginInterface {
     running: boolean
@@ -10,9 +13,9 @@ const collectionDefinitions: CollectionDefinitionMap = {
     test: {
         version: new Date(),
         fields: {
-            foo: { type: 'string' }
-        }
-    }
+            foo: { type: 'string' },
+        },
+    },
 }
 
 export const main: PluginEntryFunction = async (input) => {
@@ -21,13 +24,17 @@ export const main: PluginEntryFunction = async (input) => {
         start: async () => {
             const api = await input.getApi()
             await api.updateSchema({ schema: { collectionDefinitions } })
-            await api.executeOperation({ operation: ['createObject', 'test', { foo: 'bla' }] })
-            plugin.foundObjects = await api.executeOperation({ operation: ['findObjects', 'test', {}] })
+            await api.executeOperation({
+                operation: ['createObject', 'test', { foo: 'bla' }],
+            })
+            plugin.foundObjects = await api.executeOperation({
+                operation: ['findObjects', 'test', {}],
+            })
             plugin.running = true
         },
         stop: async () => {
             plugin.running = true
-        }
+        },
     }
     return plugin
 }

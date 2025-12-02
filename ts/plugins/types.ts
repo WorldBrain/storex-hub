@@ -1,4 +1,4 @@
-import { PluginInfo } from "@worldbrain/storex-hub-interfaces/lib/plugins";
+import { PluginInfo } from '@worldbrain/storex-hub-interfaces/ts/plugins'
 
 export interface InstalledPluginMetadata {
     identifier: string

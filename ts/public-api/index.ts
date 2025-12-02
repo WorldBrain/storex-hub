@@ -1,1 +1,1 @@
-export * from '@worldbrain/storex-hub-interfaces/lib/api'
+export * from '@worldbrain/storex-hub-interfaces/ts/api'

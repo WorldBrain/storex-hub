@@ -1,7 +1,7 @@
 import pick from 'lodash/pick'
-import expect from 'expect';
-import { createApiTestSuite } from "./index.tests";
-import { SettingsDescription } from '@worldbrain/storex-hub-interfaces/lib/settings';
+import expect from 'expect'
+import { createApiTestSuite } from './index.tests'
+import { SettingsDescription } from '@worldbrain/storex-hub-interfaces/ts/settings'
 
 export default createApiTestSuite('App settings', ({ it }) => {
     it('should store and retrieve app settings', async ({ createSession }) => {
@@ -40,7 +40,9 @@ export default createApiTestSuite('App settings', ({ it }) => {
         })
     })
 
-    it('should store, retrieve and delete app settings from other apps', async ({ createSession }) => {
+    it('should store, retrieve and delete app settings from other apps', async ({
+        createSession,
+    }) => {
         const { api: contacts } = await createSession()
         await contacts.registerApp({ name: 'contacts', identify: true })
 
@@ -48,12 +50,17 @@ export default createApiTestSuite('App settings', ({ it }) => {
         await manager.registerApp({ name: 'manager', identify: true })
 
         const settings = { foo: 'spam', bar: 5, ham: false }
-        await manager.setAppSettings({ updates: { ...settings }, app: 'contacts' })
+        await manager.setAppSettings({
+            updates: { ...settings },
+            app: 'contacts',
+        })
         expect(await contacts.getAppSettings({ keys: 'all' })).toEqual({
             status: 'success',
             settings,
         })
-        expect(await manager.getAppSettings({ keys: 'all', app: 'contacts' })).toEqual({
+        expect(
+            await manager.getAppSettings({ keys: 'all', app: 'contacts' }),
+        ).toEqual({
             status: 'success',
             settings,
         })
@@ -64,13 +71,17 @@ export default createApiTestSuite('App settings', ({ it }) => {
             status: 'success',
             settings,
         })
-        expect(await manager.getAppSettings({ keys: 'all', app: 'contacts' })).toEqual({
+        expect(
+            await manager.getAppSettings({ keys: 'all', app: 'contacts' }),
+        ).toEqual({
             status: 'success',
             settings,
         })
     })
 
-    it('should describe and get setting descriptions', async ({ createSession }) => {
+    it('should describe and get setting descriptions', async ({
+        createSession,
+    }) => {
         const { api: contacts } = await createSession()
         await contacts.registerApp({ name: 'contacts', identify: true })
 
@@ -81,27 +92,30 @@ export default createApiTestSuite('App settings', ({ it }) => {
             layout: {
                 sections: [
                     {
-                        title: 'First', contents: [
-                            { field: 'one' }
-                        ]
-                    }
-                ]
+                        title: 'First',
+                        contents: [{ field: 'one' }],
+                    },
+                ],
             },
             fields: {
                 one: {
                     type: 'string',
                     label: 'one',
                     widget: { type: 'text-input' },
-                }
-            }
+                },
+            },
         }
-        const describeResult = await contacts.describeAppSettings({ description })
+        const describeResult = await contacts.describeAppSettings({
+            description,
+        })
         expect(describeResult).toEqual({ status: 'success' })
 
         const ownRetrieval = await contacts.getAppSettingsDescription({})
         expect(ownRetrieval).toEqual({ status: 'success', description })
 
-        const foreignRetrieval = await manager.getAppSettingsDescription({ app: 'contacts' })
+        const foreignRetrieval = await manager.getAppSettingsDescription({
+            app: 'contacts',
+        })
         expect(foreignRetrieval).toEqual({ status: 'success', description })
     })
 })

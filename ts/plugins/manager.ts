@@ -1,9 +1,22 @@
 import fs from 'fs'
 import path from 'path'
-import { PluginManagementStorage } from "./storage";
-import { PluginInfo, PluginEntryFunction, PluginInterface } from "@worldbrain/storex-hub-interfaces/lib/plugins";
-import { StorexHubApi_v0, PluginLoadError_v0, InstallPluginResult_v0, StorexHubCallbacks_v0, ListPluginsResult_v0, InstallPluginOptions_v0, InspectPluginOptions_v0, InspectPluginResult_v0 } from "../public-api";
-import { getPluginInfo } from './utils';
+import { PluginManagementStorage } from './storage'
+import {
+    PluginInfo,
+    PluginEntryFunction,
+    PluginInterface,
+} from '@worldbrain/storex-hub-interfaces/ts/plugins'
+import {
+    StorexHubApi_v0,
+    PluginLoadError_v0,
+    InstallPluginResult_v0,
+    StorexHubCallbacks_v0,
+    ListPluginsResult_v0,
+    InstallPluginOptions_v0,
+    InspectPluginOptions_v0,
+    InspectPluginResult_v0,
+} from '../public-api'
+import { getPluginInfo } from './utils'
 
 type FsModule = Pick<typeof fs, 'readdirSync' | 'readFileSync' | 'existsSync'>
 export class PluginManager {
@@ -11,11 +24,16 @@ export class PluginManager {
     private pluginStorage!: PluginManagementStorage
     private fsModule: FsModule
 
-    constructor(private options: {
-        createApi: (appIdentifer: string, options?: { callbacks?: StorexHubCallbacks_v0 }) => Promise<StorexHubApi_v0>
-        pluginsDir?: string
-        fsModule?: FsModule
-    }) {
+    constructor(
+        private options: {
+            createApi: (
+                appIdentifer: string,
+                options?: { callbacks?: StorexHubCallbacks_v0 },
+            ) => Promise<StorexHubApi_v0>
+            pluginsDir?: string
+            fsModule?: FsModule
+        },
+    ) {
         this.fsModule = options.fsModule ?? fs
     }
 
@@ -24,7 +42,7 @@ export class PluginManager {
         const enabledPlugins = await pluginStorage.getInfoForEnabledPlugins()
 
         for (const pluginInfo of enabledPlugins) {
-            (async () => {
+            ;(async () => {
                 await this._loadPlugin(pluginInfo)
             })()
         }
@@ -41,11 +59,14 @@ export class PluginManager {
         for (const pluginMetadata of allMetadata) {
             result.plugins.push(pluginMetadata.info)
             result.state[pluginMetadata.identifier] = {
-                status: pluginMetadata.enabled ? 'enabled' : 'disabled'
+                status: pluginMetadata.enabled ? 'enabled' : 'disabled',
             }
         }
 
-        if (!this.options.pluginsDir || !this.fsModule.existsSync(this.options.pluginsDir)) {
+        if (
+            !this.options.pluginsDir ||
+            !this.fsModule.existsSync(this.options.pluginsDir)
+        ) {
             return result
         }
 
@@ -53,14 +74,20 @@ export class PluginManager {
             return result
         }
 
-        const pluginDirNames = this.fsModule.readdirSync(this.options.pluginsDir)
+        const pluginDirNames = this.fsModule.readdirSync(
+            this.options.pluginsDir,
+        )
         for (const pluginDirName of pluginDirNames) {
-            const maybePluginInfo = await getPluginInfo(path.join(this.options.pluginsDir, pluginDirName), this.fsModule)
+            const maybePluginInfo = await getPluginInfo(
+                path.join(this.options.pluginsDir, pluginDirName),
+                this.fsModule,
+            )
             if (maybePluginInfo.status !== 'success') {
                 continue
             }
 
-            const existingState = result.state[maybePluginInfo.pluginInfo.identifier]
+            const existingState =
+                result.state[maybePluginInfo.pluginInfo.identifier]
             if (existingState) {
                 continue
             }
@@ -74,12 +101,16 @@ export class PluginManager {
         return result
     }
 
-    async inspectPlugin(options: InspectPluginOptions_v0): Promise<InspectPluginResult_v0> {
+    async inspectPlugin(
+        options: InspectPluginOptions_v0,
+    ): Promise<InspectPluginResult_v0> {
         if ('location' in options) {
             throw new Error(`Not implemented`)
         }
 
-        const findResult = await this._findPluginByIdentifier(options.identifier)
+        const findResult = await this._findPluginByIdentifier(
+            options.identifier,
+        )
         if (!findResult) {
             return { status: 'not-found', identifier: options.identifier }
         }
@@ -89,11 +120,16 @@ export class PluginManager {
         }
     }
 
-    async installPlugin(options: InstallPluginOptions_v0): Promise<InstallPluginResult_v0> {
+    async installPlugin(
+        options: InstallPluginOptions_v0,
+    ): Promise<InstallPluginResult_v0> {
         let pluginInfo: PluginInfo
         let location: string
         if ('location' in options) {
-            const maybePluginInfo = await getPluginInfo(options.location, this.fsModule)
+            const maybePluginInfo = await getPluginInfo(
+                options.location,
+                this.fsModule,
+            )
             if (maybePluginInfo.status !== 'success') {
                 return maybePluginInfo
             }
@@ -101,7 +137,9 @@ export class PluginManager {
             pluginInfo = maybePluginInfo.pluginInfo
             location = options.location
         } else {
-            const findResult = await this._findPluginByIdentifier(options.identifier)
+            const findResult = await this._findPluginByIdentifier(
+                options.identifier,
+            )
             if (!findResult) {
                 return { status: 'not-found', identifier: options.identifier }
             }
@@ -110,7 +148,10 @@ export class PluginManager {
             location = findResult.location
         }
 
-        const existingPluginInfo = await this.pluginStorage.getPluginInfoByIdentifier(pluginInfo.identifier)
+        const existingPluginInfo =
+            await this.pluginStorage.getPluginInfoByIdentifier(
+                pluginInfo.identifier,
+            )
         if (existingPluginInfo) {
             return { status: 'already-installed' }
         }
@@ -125,11 +166,16 @@ export class PluginManager {
         return { status: 'success' }
     }
 
-    async _findPluginByIdentifier(identifier: string): Promise<null | { location: string, pluginInfo: PluginInfo }> {
+    async _findPluginByIdentifier(
+        identifier: string,
+    ): Promise<null | { location: string; pluginInfo: PluginInfo }> {
         const installedPlugins = await this.pluginStorage.getAllPluginMetadata()
         for (const installedPlugin of installedPlugins) {
             if (installedPlugin.identifier === identifier) {
-                return { location: installedPlugin.path, pluginInfo: installedPlugin.info }
+                return {
+                    location: installedPlugin.path,
+                    pluginInfo: installedPlugin.info,
+                }
             }
         }
 
@@ -137,9 +183,11 @@ export class PluginManager {
             return null
         }
 
-        const pluginDirNames = this.fsModule.readdirSync(this.options.pluginsDir)
+        const pluginDirNames = this.fsModule.readdirSync(
+            this.options.pluginsDir,
+        )
         for (const pluginDirName of pluginDirNames) {
-            const location = path.join(this.options.pluginsDir, pluginDirName);
+            const location = path.join(this.options.pluginsDir, pluginDirName)
             const maybePluginInfo = await getPluginInfo(location, this.fsModule)
             if (maybePluginInfo.status !== 'success') {
                 continue
@@ -153,29 +201,43 @@ export class PluginManager {
         return null
     }
 
-    async _loadPlugin(pluginInfo: PluginInfo): Promise<{ status: 'success' } | PluginLoadError_v0> {
+    async _loadPlugin(
+        pluginInfo: PluginInfo,
+    ): Promise<{ status: 'success' } | PluginLoadError_v0> {
         let pluginModule: any
         try {
             pluginModule = require(pluginInfo.mainPath)
         } catch (e) {
-            console.error(`ERROR - Could not require plugin ${pluginInfo.identifier} at path ${pluginInfo.mainPath}:`)
+            console.error(
+                `ERROR - Could not require plugin ${pluginInfo.identifier} at path ${pluginInfo.mainPath}:`,
+            )
             console.error(e)
             return { status: 'plugin-require-failed' }
         }
 
-        const entryFunction: PluginEntryFunction = pluginModule[pluginInfo.entryFunction]
+        const entryFunction: PluginEntryFunction =
+            pluginModule[pluginInfo.entryFunction]
         if (!entryFunction) {
-            console.error(`ERROR - Could not find entry function '${pluginInfo.entryFunction}' in plugin ${pluginInfo.identifier}, file ${pluginInfo.mainPath}`)
-            return { status: 'missing-entry-function', entryFunction: pluginInfo.entryFunction }
+            console.error(
+                `ERROR - Could not find entry function '${pluginInfo.entryFunction}' in plugin ${pluginInfo.identifier}, file ${pluginInfo.mainPath}`,
+            )
+            return {
+                status: 'missing-entry-function',
+                entryFunction: pluginInfo.entryFunction,
+            }
         }
 
         let plugin: PluginInterface
         try {
-            plugin = this.loadedPlugins[pluginInfo.identifier] = await entryFunction({
-                getApi: options => this.options.createApi(pluginInfo.identifier, options),
-            })
+            plugin = this.loadedPlugins[pluginInfo.identifier] =
+                await entryFunction({
+                    getApi: (options) =>
+                        this.options.createApi(pluginInfo.identifier, options),
+                })
         } catch (e) {
-            console.error(`ERROR during initialization plugin '${pluginInfo.identifier}':`)
+            console.error(
+                `ERROR during initialization plugin '${pluginInfo.identifier}':`,
+            )
             console.error(e)
             return { status: 'entry-function-failed' }
         }
